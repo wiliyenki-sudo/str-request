@@ -131,7 +131,146 @@
   </div>
   <script>
     const SCRIPT_URL = '<?= scriptUrl ?>';
-    // JS added in Task 8
+    let rowCount = 0;
+
+    async function loadDropdowns() {
+      show('screen-loading');
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=getDropdowns');
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        fillSelect('f-site', data.sites.map(s => ({ value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') })));
+        fillSelect('f-supply', data.sites.map(s => ({ value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') })));
+        fillSelect('f-type', data.strTypes.map(t => ({ value: t, label: t })));
+        fillSelect('f-dept', data.departments.map(d => ({ value: d, label: d })));
+        if (document.getElementById('item-tbody').rows.length === 0) addRow();
+        show('screen-form');
+      } catch (e) {
+        console.error(e);
+        show('screen-error');
+      }
+    }
+
+    function fillSelect(id, options) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = '<option value="">-- Pilih --</option>';
+      options.forEach(({ value, label }) => {
+        const opt = document.createElement('option');
+        opt.value = value; opt.textContent = label;
+        sel.appendChild(opt);
+      });
+    }
+
+    function addRow() {
+      rowCount++;
+      const id = rowCount;
+      const tr = document.createElement('tr');
+      tr.dataset.rid = id;
+      tr.innerHTML =
+        '<td><input type="text" class="c-art" placeholder="Kode artikel"></td>' +
+        '<td><input type="text" class="c-desc" placeholder="Deskripsi"></td>' +
+        '<td><input type="number" class="c-stock" min="0" value="0"></td>' +
+        '<td><input type="number" class="c-sales" min="0" value="0"></td>' +
+        '<td><input type="number" class="c-reqqty" min="1" placeholder="0"></td>' +
+        '<td><input type="text" class="c-reason" placeholder="Alasan"></td>' +
+        '<td class="td-del"><button type="button" class="btn-del" onclick="removeRow(' + id + ')">✕</button></td>';
+      document.getElementById('item-tbody').appendChild(tr);
+    }
+
+    function removeRow(id) {
+      const row = document.querySelector('tr[data-rid="' + id + '"]');
+      if (row) row.remove();
+    }
+
+    function getRows() {
+      return Array.from(document.querySelectorAll('#item-tbody tr')).map(row => ({
+        article:     row.querySelector('.c-art').value.trim(),
+        description: row.querySelector('.c-desc').value.trim(),
+        stockQty:    row.querySelector('.c-stock').value,
+        salesQty:    row.querySelector('.c-sales').value,
+        requestQty:  row.querySelector('.c-reqqty').value,
+        reason:      row.querySelector('.c-reason').value.trim()
+      }));
+    }
+
+    function validate() {
+      const errs = [];
+      [['f-site','Site'],['f-type','Type STR'],['f-supply','Supplying Site'],
+       ['f-dept','Department'],['f-date','Plan Receive Date'],['f-reqby','Requested By']
+      ].forEach(([id, label]) => { if (!document.getElementById(id).value) errs.push(label + ' wajib diisi'); });
+      const dateVal = document.getElementById('f-date').value;
+      if (dateVal) {
+        const picked = new Date(dateVal), today = new Date();
+        today.setHours(0,0,0,0);
+        if (picked < today) errs.push('Plan Receive Date tidak boleh masa lalu');
+      }
+      const rows = getRows();
+      if (rows.length === 0) { errs.push('Minimal 1 item harus ditambahkan'); return errs; }
+      if (!rows.some(r => Number(r.requestQty) > 0)) errs.push('Minimal 1 item dengan Request Qty > 0');
+      return errs;
+    }
+
+    document.getElementById('str-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const errs = validate();
+      const errEl = document.getElementById('error-msg');
+      if (errs.length) {
+        errEl.textContent = errs.join(' • ');
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      errEl.style.display = 'none';
+      const siteEl = document.getElementById('f-site');
+      const siteName = siteEl.options[siteEl.selectedIndex].text.split(' — ').slice(1).join(' — ');
+      const payload = {
+        header: {
+          site:            siteEl.value,
+          siteName:        siteName,
+          typeStr:         document.getElementById('f-type').value,
+          supplyingSite:   document.getElementById('f-supply').value,
+          department:      document.getElementById('f-dept').value,
+          planReceiveDate: document.getElementById('f-date').value,
+          requestedBy:     document.getElementById('f-reqby').value.trim()
+        },
+        items: getRows()
+      };
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error || 'Submit gagal');
+        document.getElementById('str-number-display').textContent = result.strNumber;
+        show('screen-success');
+      } catch (err) {
+        errEl.textContent = 'Submit gagal: ' + err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Submit STR';
+      }
+    });
+
+    document.getElementById('btn-add-item').addEventListener('click', addRow);
+    document.getElementById('btn-back').addEventListener('click', () => window.history.back());
+
+    function resetForm() {
+      document.getElementById('str-form').reset();
+      document.getElementById('item-tbody').innerHTML = '';
+      rowCount = 0;
+      loadDropdowns();
+    }
+
+    function show(id) {
+      ['screen-loading','screen-error','screen-form','screen-success'].forEach(s => {
+        document.getElementById(s).style.display = (s === id) ? '' : 'none';
+      });
+    }
+
+    window.onload = loadDropdowns;
   </script>
 </body>
 </html>
