@@ -1,2 +1,137 @@
 <!DOCTYPE html>
-<html><head><title>STR Form</title></head><body>placeholder</body></html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request New STR</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
+    #app { max-width: 960px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-weight: 500; font-size: 13px; }
+    select, input[type="text"], input[type="date"] {
+      border: 1px solid #d0d0d0; border-radius: 6px; padding: 8px 10px;
+      font-size: 14px; width: 100%; background: #fff;
+    }
+    select:focus, input:focus { outline: none; border-color: #1a73e8; }
+
+    hr { border: none; border-top: 1px solid #e0e0e0; margin: 16px 0; }
+
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .table-container { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    thead { background: #f8f8f8; }
+    th { padding: 8px 10px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; border-bottom: 1px solid #e0e0e0; }
+    td { padding: 6px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    td input { border: 1px solid #d0d0d0; border-radius: 4px; padding: 6px 8px; font-size: 13px; width: 100%; min-width: 60px; }
+    td input:focus { outline: none; border-color: #1a73e8; }
+    td input[type="number"] { min-width: 70px; }
+    .td-del { width: 32px; text-align: center; }
+    .btn-del { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+    .btn-del:hover { background: #ffe0e0; color: #d00; }
+
+    .btn-add { margin-top: 10px; background: none; border: 1px dashed #999; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: #555; }
+    .btn-add:hover { border-color: #333; color: #333; }
+
+    .error-msg { background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 6px; padding: 10px 14px; color: #c62828; font-size: 13px; margin: 12px 0; }
+
+    .footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-back { border: 1px solid #d0d0d0; background: #fff; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; }
+    .btn-submit { background: #111; color: #fff; border: none; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; }
+    .btn-submit:disabled { background: #888; cursor: not-allowed; }
+
+    .screen { min-height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .success-box { background: #fff; border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .str-badge { font-size: 20px; font-weight: 700; letter-spacing: 1px; background: #f0f4ff; color: #1a73e8; padding: 10px 20px; border-radius: 8px; margin: 12px 0; display: inline-block; }
+    .btn-new { background: #111; color: #fff; border: none; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="screen-loading" class="screen"><p>Memuat data, mohon tunggu...</p></div>
+
+    <div id="screen-error" class="screen" style="display:none">
+      <p>Gagal memuat data dropdown.</p>
+      <button class="btn-back" onclick="loadDropdowns()">Coba Lagi</button>
+    </div>
+
+    <div id="screen-form" style="display:none">
+      <h1>Request New STR</h1>
+      <form id="str-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="f-site">Site *</label>
+            <select id="f-site" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-type">Type STR *</label>
+            <select id="f-type" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-supply">Supplying Site *</label>
+            <select id="f-supply" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-dept">Department *</label>
+            <select id="f-dept" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-date">Plan Receive Date *</label>
+            <input type="date" id="f-date" required>
+          </div>
+          <div class="form-group">
+            <label for="f-reqby">Requested By *</label>
+            <input type="text" id="f-reqby" placeholder="Nama - NIP" required>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="table-section">
+          <div class="table-header"><h3>Item List</h3></div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Article</th><th>Description</th><th>Stock Qty</th>
+                  <th>Sales Qty</th><th>Request Qty *</th><th>Reason</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="item-tbody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn-add" id="btn-add-item">+ Add Item</button>
+        </div>
+
+        <div id="error-msg" class="error-msg" style="display:none"></div>
+
+        <div class="footer">
+          <button type="button" class="btn-back" id="btn-back">Back</button>
+          <button type="submit" class="btn-submit" id="btn-submit">Submit STR</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="screen-success" class="screen" style="display:none">
+      <div class="success-box">
+        <p style="font-size:16px;font-weight:600">STR Berhasil Dibuat!</p>
+        <p style="color:#555;font-size:13px;margin-top:6px">Nomor STR kamu:</p>
+        <div class="str-badge" id="str-number-display"></div>
+        <p style="color:#555;font-size:12px">Screenshot atau catat nomor ini untuk tracking.</p>
+        <button class="btn-new" onclick="resetForm()">Buat STR Baru</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const SCRIPT_URL = '<?= scriptUrl ?>';
+    // JS added in Task 8
+  </script>
+</body>
+</html>
