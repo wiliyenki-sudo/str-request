@@ -27,6 +27,7 @@ function getTenantToken() {
 function larkSearch(appToken, tableId, filter, pageSize) {
   var token = getTenantToken();
   var url = 'https://open.larksuite.com/open-apis/bitable/v1/apps/' + appToken + '/tables/' + tableId + '/records/search';
+  // Returns at most page_size records — no pagination loop; callers must filter to avoid silent truncation
   var payload = { page_size: pageSize || 500 };
   if (filter) payload.filter = filter;
 
