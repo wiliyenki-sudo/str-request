@@ -77,6 +77,38 @@ function getJsapiConfig(pageUrl) {
   return { appId: appId, timestamp: timestamp, nonceStr: nonceStr, signature: signature };
 }
 
+// ─── Get User Info by Auth Code ───────────────────────────────────────────────
+
+function getUserByCode(code) {
+  var props     = PropertiesService.getScriptProperties();
+  var appId     = props.getProperty('LARK_APP_ID');
+  var appSecret = props.getProperty('LARK_APP_SECRET');
+
+  // Exchange code for user access token
+  var tokenResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/authen/v1/oidc/access_token', {
+    method: 'post',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': 'Basic ' + Utilities.base64Encode(appId + ':' + appSecret)
+    },
+    payload: JSON.stringify({ grant_type: 'authorization_code', code: code })
+  });
+  var tokenData = JSON.parse(tokenResp.getContentText());
+  if (tokenData.code !== 0) throw new Error('getAccessToken failed: ' + tokenData.msg);
+
+  // Get user info
+  var userResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/authen/v1/user_info', {
+    headers: { 'Authorization': 'Bearer ' + tokenData.data.access_token }
+  });
+  var userData = JSON.parse(userResp.getContentText());
+  if (userData.code !== 0) throw new Error('getUserInfo failed: ' + userData.msg);
+
+  return {
+    openId:   userData.data.open_id,
+    nickName: userData.data.name
+  };
+}
+
 // ─── Form Dropdowns ───────────────────────────────────────────────────────────
 
 var MASTER_APP  = 'CBu2bJJfraK08es2cnolJbMlgFe';
@@ -186,6 +218,14 @@ function submitSTR(data) {
 function doGet(e) {
   var action = e.parameter.action;
   try {
+    if (action === 'getUserByCode') {
+      var code = e.parameter.code;
+      if (!code) throw new Error('code parameter required');
+      result = getUserByCode(code);
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'ok', data: result }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'jsapiConfig') {
       var pageUrl = decodeURIComponent(e.parameter.url || '');
       if (!pageUrl) throw new Error('url parameter required');
