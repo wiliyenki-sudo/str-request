@@ -177,11 +177,13 @@
         '<td><input type="text" class="c-reason" placeholder="Alasan"></td>' +
         '<td class="td-del"><button type="button" class="btn-del" onclick="removeRow(' + id + ')">✕</button></td>';
       document.getElementById('item-tbody').appendChild(tr);
+      document.getElementById('btn-add-item').disabled = document.getElementById('item-tbody').rows.length >= 10;
     }
 
     function removeRow(id) {
       const row = document.querySelector('tr[data-rid="' + id + '"]');
       if (row) row.remove();
+      document.getElementById('btn-add-item').disabled = document.getElementById('item-tbody').rows.length >= 10;
     }
 
     function getRows() {
@@ -205,9 +207,12 @@
         const picked = new Date(dateVal), today = new Date();
         today.setHours(0,0,0,0);
         if (picked < today) errs.push('Plan Receive Date tidak boleh masa lalu');
+        const maxDate = new Date(today); maxDate.setDate(today.getDate() + 4);
+        if (picked > maxDate) errs.push('Plan Receive Date maksimal 4 hari dari hari ini');
       }
       const rows = getRows();
       if (rows.length === 0) { errs.push('Minimal 1 item harus ditambahkan'); return errs; }
+      if (rows.length > 10) errs.push('Maksimal 10 artikel per pengajuan');
       if (!rows.some(r => Number(r.requestQty) > 0)) errs.push('Minimal 1 item dengan Request Qty > 0');
       return errs;
     }

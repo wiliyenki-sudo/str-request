@@ -171,7 +171,7 @@ function doPost(e) {
       'Plan Receive Date': new Date(header.planReceiveDate).getTime(),
       'Requested By':      header.requestedBy,
       'Submit Date':       now.getTime(),
-      'Status':            'Open'
+      'Status':            'Waiting Approval by Mgr'
     });
 
     items.forEach(function(item, index) {
@@ -220,7 +220,7 @@ function submitSTR(data) {
     'Plan Receive Date': new Date(header.planReceiveDate).getTime(),
     'Requested By':      header.requestedBy,
     'Submit Date':       now.getTime(),
-    'Status':            'Open'
+    'Status':            'Waiting Approval by Mgr'
   });
 
   items.forEach(function(item, index) {
