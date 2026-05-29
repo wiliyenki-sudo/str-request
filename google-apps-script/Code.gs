@@ -86,19 +86,34 @@ function testLarkSearch() {
   Logger.log('larkSearch OK, first SITE: ' + records[0].fields['SITE']);
 }
 
+// Lark Base primary (title) fields return [{text:"...", type:"text"}] instead of a plain string.
+// All other field types that may return objects are handled here too.
+function fieldText(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (Array.isArray(val)) {
+    return val.map(function(v) {
+      return typeof v === 'string' ? v : (v.text || v.value || '');
+    }).join('');
+  }
+  if (typeof val === 'object') return val.text || val.value || '';
+  return String(val);
+}
+
 function getDropdowns() {
   var props = PropertiesService.getScriptProperties();
 
   var siteRecords = larkSearch(props.getProperty('MASTER_BASE_APP_TOKEN'), props.getProperty('MASTER_SITE_TABLE_ID'));
   var sites = siteRecords
-    .map(function(r) { return { code: r.fields['SITE'], name: r.fields['STORE Name'] || '' }; })
+    .map(function(r) { return { code: fieldText(r.fields['SITE']), name: fieldText(r.fields['STORE Name']) }; })
     .filter(function(s) { return s.code; });
 
   var typeRecords = larkSearch(props.getProperty('STR_BASE_APP_TOKEN'), props.getProperty('STR_TYPE_TABLE_ID'));
-  var strTypes = typeRecords.map(function(r) { return r.fields['Type Name']; }).filter(Boolean);
+  var strTypes = typeRecords.map(function(r) { return fieldText(r.fields['Type Name']); }).filter(Boolean);
 
   var deptRecords = larkSearch(props.getProperty('STR_BASE_APP_TOKEN'), props.getProperty('DEPT_TABLE_ID'));
-  var departments = deptRecords.map(function(r) { return r.fields['Dept Name']; }).filter(Boolean);
+  var departments = deptRecords.map(function(r) { return fieldText(r.fields['Dept Name']); }).filter(Boolean);
 
   return { sites: sites, strTypes: strTypes, departments: departments };
 }
