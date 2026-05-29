@@ -130,15 +130,17 @@
     </div>
   </div>
   <script>
-    const SCRIPT_URL = '<?= scriptUrl ?>';
     let rowCount = 0;
 
     async function loadDropdowns() {
       show('screen-loading');
       try {
-        const res = await fetch(SCRIPT_URL + '?action=getDropdowns');
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        const data = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(new Error(err.message || String(err))))
+            .getDropdowns();
+        });
         fillSelect('f-site', data.sites.map(s => ({ value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') })));
         fillSelect('f-supply', data.sites.map(s => ({ value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') })));
         fillSelect('f-type', data.strTypes.map(t => ({ value: t, label: t })));
@@ -238,13 +240,12 @@
       const btn = document.getElementById('btn-submit');
       btn.disabled = true; btn.textContent = 'Menyimpan...';
       try {
-        const res = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        const result = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(new Error(err.message || String(err))))
+            .submitSTR(payload);
         });
-        const result = await res.json();
-        if (!result.success) throw new Error(result.error || 'Submit gagal');
         document.getElementById('str-number-display').textContent = result.strNumber;
         show('screen-success');
       } catch (err) {

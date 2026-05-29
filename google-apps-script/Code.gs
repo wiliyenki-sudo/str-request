@@ -193,6 +193,52 @@ function doPost(e) {
   }
 }
 
+// Called from HTML via google.script.run — bypasses CORS restriction of fetch()
+function submitSTR(data) {
+  var header = data.header;
+  var items = data.items;
+
+  if (!header.site || !header.typeStr || !header.supplyingSite ||
+      !header.department || !header.planReceiveDate || !header.requestedBy) {
+    throw new Error('Field header tidak lengkap');
+  }
+  if (!items || items.length === 0) {
+    throw new Error('Minimal 1 item diperlukan');
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var strNumber = generateSTRNumber(header.site);
+  var now = new Date();
+
+  larkCreate(props.getProperty('STR_BASE_APP_TOKEN'), props.getProperty('STR_HEADER_TABLE_ID'), {
+    'STR Number':        strNumber,
+    'Site':              header.site,
+    'Site Name':         header.siteName || '',
+    'Type STR':          header.typeStr,
+    'Supplying Site':    header.supplyingSite,
+    'Department':        header.department,
+    'Plan Receive Date': new Date(header.planReceiveDate).getTime(),
+    'Requested By':      header.requestedBy,
+    'Submit Date':       now.getTime(),
+    'Status':            'Open'
+  });
+
+  items.forEach(function(item, index) {
+    larkCreate(props.getProperty('STR_BASE_APP_TOKEN'), props.getProperty('STR_DETAIL_TABLE_ID'), {
+      'STR Number':   strNumber,
+      'Row Sequence': index + 1,
+      'Article':      item.article || '',
+      'Description':  item.description || '',
+      'Stock Qty':    Number(item.stockQty) || 0,
+      'Sales Qty':    Number(item.salesQty) || 0,
+      'Request Qty':  Number(item.requestQty),
+      'Reason':       item.reason || ''
+    });
+  });
+
+  return { strNumber: strNumber };
+}
+
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
