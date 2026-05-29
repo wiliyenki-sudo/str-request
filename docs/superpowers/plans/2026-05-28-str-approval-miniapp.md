@@ -171,6 +171,21 @@ function getUserInfo() {
 - [ ] **Step 2: Create `utils/api.js`**
 
 ```javascript
+// fieldText: safely extract a plain string from any Lark field value.
+// Primary/title fields return [{text:'...', type:'text'}] — this handles that case.
+function fieldText(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (Array.isArray(val)) {
+    return val.map(function(v) {
+      return typeof v === 'string' ? v : (v.text || v.value || '');
+    }).join('');
+  }
+  if (typeof val === 'object') return val.text || val.value || '';
+  return String(val);
+}
+
 // larkSearch: POST /records/search — filter is optional {conjunction, conditions}
 // Returns array of {record_id, fields: {...}}
 function larkSearch(appToken, tableId, filter, pageSize) {
@@ -531,14 +546,14 @@ function loadList() {
       _allRecords = records.map(function(r) {
         return {
           recordId:       r.record_id,
-          strNumber:      r.fields['STR Number']       || '',
-          site:           r.fields['Site']             || '',
-          siteName:       r.fields['Site Name']        || '',
-          department:     r.fields['Department']       || '',
-          status:         r.fields['Status']           || '',
+          strNumber:      fieldText(r.fields['STR Number']),
+          site:           fieldText(r.fields['Site']),
+          siteName:       fieldText(r.fields['Site Name']),
+          department:     fieldText(r.fields['Department']),
+          status:         fieldText(r.fields['Status']),
           submitDate:     fmtDate(r.fields['Submit Date']),
           planReceiveDate: fmtDate(r.fields['Plan Receive Date']),
-          prNumber:       r.fields['PR Number']        || ''
+          prNumber:       fieldText(r.fields['PR Number'])
         };
       });
       renderList(_allRecords);
@@ -730,31 +745,31 @@ function loadDetail() {
       detailRecords.sort(function(a, b) { return (a.fields['Row Sequence'] || 0) - (b.fields['Row Sequence'] || 0); });
 
       renderHeader({
-        strNumber:       h.fields['STR Number']       || '',
-        status:          h.fields['Status']           || '',
-        site:            h.fields['Site']             || '',
-        siteName:        h.fields['Site Name']        || '',
-        typeStr:         h.fields['Type STR']         || '',
-        supplyingSite:   h.fields['Supplying Site']   || '',
-        department:      h.fields['Department']       || '',
+        strNumber:       fieldText(h.fields['STR Number']),
+        status:          fieldText(h.fields['Status']),
+        site:            fieldText(h.fields['Site']),
+        siteName:        fieldText(h.fields['Site Name']),
+        typeStr:         fieldText(h.fields['Type STR']),
+        supplyingSite:   fieldText(h.fields['Supplying Site']),
+        department:      fieldText(h.fields['Department']),
         planReceiveDate: fmtDate(h.fields['Plan Receive Date']),
-        requestedBy:     h.fields['Requested By']     || '',
+        requestedBy:     fieldText(h.fields['Requested By']),
         submitDate:      fmtDate(h.fields['Submit Date']),
-        approvedBy:      h.fields['Approved By']      || '',
+        approvedBy:      fieldText(h.fields['Approved By']),
         approvedDate:    fmtDate(h.fields['Approved Date']),
-        prNumber:        h.fields['PR Number']        || '',
-        rejectReason:    h.fields['Reject Reason']    || ''
+        prNumber:        fieldText(h.fields['PR Number']),
+        rejectReason:    fieldText(h.fields['Reject Reason'])
       });
 
       renderItems(detailRecords.map(function(r) {
         return {
-          seq:         r.fields['Row Sequence']  || '',
-          article:     r.fields['Article']       || '',
-          description: r.fields['Description']   || '',
+          seq:         fieldText(r.fields['Row Sequence']),
+          article:     fieldText(r.fields['Article']),
+          description: fieldText(r.fields['Description']),
           stockQty:    r.fields['Stock Qty']     != null ? r.fields['Stock Qty'] : '',
           salesQty:    r.fields['Sales Qty']     != null ? r.fields['Sales Qty'] : '',
           requestQty:  r.fields['Request Qty']   != null ? r.fields['Request Qty'] : '',
-          reason:      r.fields['Reason']        || ''
+          reason:      fieldText(r.fields['Reason'])
         };
       }));
 
@@ -887,7 +902,7 @@ function loadList() {
           var arr = Array.isArray(smUsers) ? smUsers : [smUsers];
           return arr.some(function(u) { return (u.id || u.open_id || u.openId) === openId; });
         })
-        .map(function(r) { return r.fields[CONFIG.MASTER_SITE_FIELD]; });
+        .map(function(r) { return fieldText(r.fields[CONFIG.MASTER_SITE_FIELD]); });
 
       if (mySites.length === 0) { show('screen-empty'); return; }
 
@@ -896,16 +911,16 @@ function loadList() {
         { conjunction: 'AND', conditions: [{ field_name: 'Status', operator: 'is', value: [CONFIG.STATUS_WAITING_MGR] }] }
       ).then(function(strRecords) {
         var list = strRecords
-          .filter(function(r) { return mySites.indexOf(r.fields['Site']) !== -1; })
+          .filter(function(r) { return mySites.indexOf(fieldText(r.fields['Site'])) !== -1; })
           .map(function(r) {
             return {
               recordId:    r.record_id,
-              strNumber:   r.fields['STR Number']       || '',
-              site:        r.fields['Site']             || '',
-              siteName:    r.fields['Site Name']        || '',
-              typeStr:     r.fields['Type STR']         || '',
-              department:  r.fields['Department']       || '',
-              requestedBy: r.fields['Requested By']     || '',
+              strNumber:   fieldText(r.fields['STR Number']),
+              site:        fieldText(r.fields['Site']),
+              siteName:    fieldText(r.fields['Site Name']),
+              typeStr:     fieldText(r.fields['Type STR']),
+              department:  fieldText(r.fields['Department']),
+              requestedBy: fieldText(r.fields['Requested By']),
               submitDate:  fmtDate(r.fields['Submit Date'])
             };
           });
@@ -1097,26 +1112,26 @@ function loadDetail() {
       detailRecords.sort(function(a, b) { return (a.fields['Row Sequence'] || 0) - (b.fields['Row Sequence'] || 0); });
 
       renderHeader({
-        strNumber:       h.fields['STR Number']       || '',
-        site:            h.fields['Site']             || '',
-        siteName:        h.fields['Site Name']        || '',
-        typeStr:         h.fields['Type STR']         || '',
-        supplyingSite:   h.fields['Supplying Site']   || '',
-        department:      h.fields['Department']       || '',
+        strNumber:       fieldText(h.fields['STR Number']),
+        site:            fieldText(h.fields['Site']),
+        siteName:        fieldText(h.fields['Site Name']),
+        typeStr:         fieldText(h.fields['Type STR']),
+        supplyingSite:   fieldText(h.fields['Supplying Site']),
+        department:      fieldText(h.fields['Department']),
         planReceiveDate: fmtDate(h.fields['Plan Receive Date']),
-        requestedBy:     h.fields['Requested By']     || '',
+        requestedBy:     fieldText(h.fields['Requested By']),
         submitDate:      fmtDate(h.fields['Submit Date'])
       });
 
       renderItems(detailRecords.map(function(r) {
         return {
-          seq:         r.fields['Row Sequence']  || '',
-          article:     r.fields['Article']       || '',
-          description: r.fields['Description']   || '',
+          seq:         fieldText(r.fields['Row Sequence']),
+          article:     fieldText(r.fields['Article']),
+          description: fieldText(r.fields['Description']),
           stockQty:    r.fields['Stock Qty']     != null ? r.fields['Stock Qty'] : '',
           salesQty:    r.fields['Sales Qty']     != null ? r.fields['Sales Qty'] : '',
           requestQty:  r.fields['Request Qty']   != null ? r.fields['Request Qty'] : '',
-          reason:      r.fields['Reason']        || ''
+          reason:      fieldText(r.fields['Reason'])
         };
       }));
 
@@ -1309,10 +1324,10 @@ function loadList() {
     var list = records.map(function(r) {
       return {
         recordId:       r.record_id,
-        strNumber:      r.fields['STR Number']       || '',
-        site:           r.fields['Site']             || '',
-        siteName:       r.fields['Site Name']        || '',
-        department:     r.fields['Department']       || '',
+        strNumber:      fieldText(r.fields['STR Number']),
+        site:           fieldText(r.fields['Site']),
+        siteName:       fieldText(r.fields['Site Name']),
+        department:     fieldText(r.fields['Department']),
         submitDate:     fmtDate(r.fields['Submit Date']),
         planReceiveDate: fmtDate(r.fields['Plan Receive Date'])
       };
@@ -1553,27 +1568,27 @@ function loadDetail() {
       detailRecords.sort(function(a, b) { return (a.fields['Row Sequence'] || 0) - (b.fields['Row Sequence'] || 0); });
 
       renderHeader({
-        strNumber:       h.fields['STR Number']       || '',
-        site:            h.fields['Site']             || '',
-        siteName:        h.fields['Site Name']        || '',
-        typeStr:         h.fields['Type STR']         || '',
-        supplyingSite:   h.fields['Supplying Site']   || '',
-        department:      h.fields['Department']       || '',
+        strNumber:       fieldText(h.fields['STR Number']),
+        site:            fieldText(h.fields['Site']),
+        siteName:        fieldText(h.fields['Site Name']),
+        typeStr:         fieldText(h.fields['Type STR']),
+        supplyingSite:   fieldText(h.fields['Supplying Site']),
+        department:      fieldText(h.fields['Department']),
         planReceiveDate: fmtDate(h.fields['Plan Receive Date']),
-        requestedBy:     h.fields['Requested By']     || '',
-        approvedBy:      h.fields['Approved By']      || '',
+        requestedBy:     fieldText(h.fields['Requested By']),
+        approvedBy:      fieldText(h.fields['Approved By']),
         submitDate:      fmtDate(h.fields['Submit Date'])
       });
 
       renderItems(detailRecords.map(function(r) {
         return {
-          seq:         r.fields['Row Sequence']  || '',
-          article:     r.fields['Article']       || '',
-          description: r.fields['Description']   || '',
+          seq:         fieldText(r.fields['Row Sequence']),
+          article:     fieldText(r.fields['Article']),
+          description: fieldText(r.fields['Description']),
           stockQty:    r.fields['Stock Qty']     != null ? r.fields['Stock Qty'] : '',
           salesQty:    r.fields['Sales Qty']     != null ? r.fields['Sales Qty'] : '',
           requestQty:  r.fields['Request Qty']   != null ? r.fields['Request Qty'] : '',
-          reason:      r.fields['Reason']        || ''
+          reason:      fieldText(r.fields['Reason'])
         };
       }));
 
