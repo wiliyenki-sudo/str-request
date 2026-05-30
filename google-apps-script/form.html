@@ -257,7 +257,8 @@
       btn.disabled = true; btn.textContent = 'Menyimpan...';
       fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Tanpa Content-Type header → browser kirim text/plain (no preflight OPTIONS)
+        // GAS tidak handle preflight → JSON header menyebabkan "Failed to fetch"
         body: JSON.stringify(payload)
       })
         .then(function(res) { return res.json(); })
