@@ -118,22 +118,34 @@ var BASE        = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
 function getDropdowns() {
   var token = getLarkToken();
 
-  // Sites — return {code, name} objects agar form.html bisa pakai s.code dan s.name
-  var sitesResp = larkApiGet(BASE + MASTER_APP + '/tables/' + MASTER_SITE + '/records?page_size=200', token);
-  var sites = (sitesResp.data.items || []).map(function(r) {
-    return { code: fieldText(r.fields['SITE']), name: fieldText(r.fields['STORE Name']) };
+  // Sites — pakai POST /records/search (konsisten dengan H5 app), page_size 500
+  // Field 'SITE' = kode site (J999), 'STORE Name' = nama toko
+  var sitesResp = larkApiPost(
+    BASE + MASTER_APP + '/tables/' + MASTER_SITE + '/records/search', token,
+    { page_size: 500 }
+  );
+  var sites = ((sitesResp.data && sitesResp.data.items) || []).map(function(r) {
+    var code = fieldText(r.fields['SITE']);
+    var name = fieldText(r.fields['STORE Name']);
+    return { code: code, name: name };
   }).filter(function(s) { return !!s.code; });
 
-  // STR Types — key 'strTypes' sesuai form.html
-  var typesResp = larkApiGet(BASE + STR_APP + '/tables/' + STR_TYPE + '/records?page_size=200', token);
-  var strTypes = (typesResp.data.items || []).map(function(r) {
+  // STR Types — pakai POST /records/search
+  var typesResp = larkApiPost(
+    BASE + STR_APP + '/tables/' + STR_TYPE + '/records/search', token,
+    { page_size: 500 }
+  );
+  var strTypes = ((typesResp.data && typesResp.data.items) || []).map(function(r) {
     var keys = Object.keys(r.fields);
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
 
-  // Departments
-  var deptResp = larkApiGet(BASE + STR_APP + '/tables/' + DEPT_TABLE + '/records?page_size=200', token);
-  var departments = (deptResp.data.items || []).map(function(r) {
+  // Departments — pakai POST /records/search
+  var deptResp = larkApiPost(
+    BASE + STR_APP + '/tables/' + DEPT_TABLE + '/records/search', token,
+    { page_size: 500 }
+  );
+  var departments = ((deptResp.data && deptResp.data.items) || []).map(function(r) {
     var keys = Object.keys(r.fields);
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
