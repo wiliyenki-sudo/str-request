@@ -188,6 +188,14 @@
         '<td><input type="text" class="c-reason" placeholder="Alasan"></td>' +
         '<td class="td-del"><button type="button" class="btn-del" onclick="removeRow(' + id + ')">&#x2715;</button></td>';
       document.getElementById('item-tbody').appendChild(tr);
+
+      // Enter di kolom Reason → tambah baris baru, bukan submit form
+      tr.querySelector('.c-reason').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addRow();
+        }
+      });
     }
 
     function removeRow(id) {
