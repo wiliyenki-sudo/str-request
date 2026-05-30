@@ -289,9 +289,7 @@ function doGet(e) {
       .setTitle('STR Request Form')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonpOut(e, { status: 'error', message: err.message });
   }
 }
 
