@@ -234,6 +234,12 @@ function doGet(e) {
         .createTextOutput(JSON.stringify({ status: 'ok', data: cfg }))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    if (action === 'getToken') {
+      var tok = getLarkToken();
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'ok', data: { token: tok } }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'getDropdowns') {
       var dd = getDropdowns();
       return ContentService
