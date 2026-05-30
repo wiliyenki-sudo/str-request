@@ -172,7 +172,7 @@ function generateSTRNumber(site) {
   });
   var count   = ((resp.data && resp.data.items) || []).length;
   var seq     = ('000' + (count + 1)).slice(-3);
-  var siteCode = site ? site.replace(/\s/g,'').toUpperCase().slice(0, 3) : 'STR';
+  var siteCode = site ? site.replace(/\s/g,'').toUpperCase().slice(0, 4) : 'STR';
   return 'STR-' + siteCode + '-' + dateStr + '-' + seq;
 }
 
@@ -381,7 +381,7 @@ function submitSTRForm(header, items) {
     var item = items[i];
     larkApiPost(BASE + STR_APP + '/tables/' + STR_DETAIL + '/records', token, {
       fields: {
-        'STR Number':   [{ id: headerId }],
+        'STR Number':   strNumber,          // text field — pakai string, bukan linked-record
         'Row Sequence': i + 1,
         'Article':      item.article     || '',
         'Description':  item.description || '',
