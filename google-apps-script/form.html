@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request New STR</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
+    #app { max-width: 960px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-weight: 500; font-size: 13px; }
+    select, input[type="text"], input[type="date"] {
+      border: 1px solid #d0d0d0; border-radius: 6px; padding: 8px 10px;
+      font-size: 14px; width: 100%; background: #fff;
+    }
+    select:focus, input:focus { outline: none; border-color: #1a73e8; }
+
+    hr { border: none; border-top: 1px solid #e0e0e0; margin: 16px 0; }
+
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .table-container { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    thead { background: #f8f8f8; }
+    th { padding: 8px 10px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; border-bottom: 1px solid #e0e0e0; }
+    td { padding: 6px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    td input { border: 1px solid #d0d0d0; border-radius: 4px; padding: 6px 8px; font-size: 13px; width: 100%; min-width: 60px; }
+    td input:focus { outline: none; border-color: #1a73e8; }
+    td input[type="number"] { min-width: 70px; }
+    .td-del { width: 32px; text-align: center; }
+    .btn-del { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+    .btn-del:hover { background: #ffe0e0; color: #d00; }
+
+    .btn-add { margin-top: 10px; background: none; border: 1px dashed #999; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: #555; }
+    .btn-add:hover { border-color: #333; color: #333; }
+
+    .error-msg { background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 6px; padding: 10px 14px; color: #c62828; font-size: 13px; margin: 12px 0; }
+
+    .footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-back { border: 1px solid #d0d0d0; background: #fff; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; }
+    .btn-submit { background: #111; color: #fff; border: none; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; }
+    .btn-submit:disabled { background: #888; cursor: not-allowed; }
+
+    .screen { min-height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .success-box { background: #fff; border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .str-badge { font-size: 20px; font-weight: 700; letter-spacing: 1px; background: #f0f4ff; color: #1a73e8; padding: 10px 20px; border-radius: 8px; margin: 12px 0; display: inline-block; }
+    .btn-new { background: #111; color: #fff; border: none; border-radius: 6px; padding: 10px 22px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="screen-loading" class="screen"><p>Memuat data, mohon tunggu...</p></div>
+
+    <div id="screen-error" class="screen" style="display:none">
+      <p>Gagal memuat data dropdown.</p>
+      <button class="btn-back" onclick="loadDropdowns()">Coba Lagi</button>
+    </div>
+
+    <div id="screen-form" style="display:none">
+      <h1>Request New STR</h1>
+      <form id="str-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="f-site">Site *</label>
+            <select id="f-site" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-type">Type STR *</label>
+            <select id="f-type" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-supply">Supplying Site *</label>
+            <select id="f-supply" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-dept">Department *</label>
+            <select id="f-dept" required></select>
+          </div>
+          <div class="form-group">
+            <label for="f-date">Plan Receive Date *</label>
+            <input type="date" id="f-date" required>
+          </div>
+          <div class="form-group">
+            <label for="f-reqby">Requested By *</label>
+            <input type="text" id="f-reqby" placeholder="Nama - NIP" required>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="table-section">
+          <div class="table-header"><h3>Item List</h3></div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Article</th><th>Description</th><th>Stock Qty</th>
+                  <th>Sales Qty</th><th>Request Qty *</th><th>Reason</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="item-tbody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn-add" id="btn-add-item">+ Add Item</button>
+        </div>
+
+        <div id="error-msg" class="error-msg" style="display:none"></div>
+
+        <div class="footer">
+          <button type="button" class="btn-back" id="btn-back">Back</button>
+          <button type="submit" class="btn-submit" id="btn-submit">Submit STR</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="screen-success" class="screen" style="display:none">
+      <div class="success-box">
+        <p style="font-size:16px;font-weight:600">STR Berhasil Dibuat!</p>
+        <p style="color:#555;font-size:13px;margin-top:6px">Nomor STR kamu:</p>
+        <div class="str-badge" id="str-number-display"></div>
+        <p style="color:#555;font-size:12px">Screenshot atau catat nomor ini untuk tracking.</p>
+        <button class="btn-new" onclick="resetForm()">Buat STR Baru</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // SCRIPT_URL di-inject oleh GAS template engine (createTemplateFromFile)
+    var SCRIPT_URL = '<?= scriptUrl ?>';
+    var rowCount = 0;
+
+    function show(id) {
+      ['screen-loading','screen-error','screen-form','screen-success'].forEach(function(s) {
+        document.getElementById(s).style.display = (s === id) ? '' : 'none';
+      });
+    }
+
+    function fillSelect(id, options) {
+      var sel = document.getElementById(id);
+      sel.innerHTML = '<option value="">-- Pilih --</option>';
+      options.forEach(function(o) {
+        var opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label;
+        sel.appendChild(opt);
+      });
+    }
+
+    function loadDropdowns() {
+      show('screen-loading');
+      fetch(SCRIPT_URL + '?action=getDropdowns')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.error) throw new Error(data.error);
+          var siteOpts = (data.sites || []).map(function(s) {
+            return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
+          });
+          fillSelect('f-site',   siteOpts);
+          fillSelect('f-supply', siteOpts);
+          fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
+          fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
+          if (document.getElementById('item-tbody').rows.length === 0) addRow();
+          show('screen-form');
+        })
+        .catch(function(e) {
+          console.error('loadDropdowns error:', e);
+          show('screen-error');
+        });
+    }
+
+    function addRow() {
+      rowCount++;
+      var id = rowCount;
+      var tr = document.createElement('tr');
+      tr.dataset.rid = id;
+      tr.innerHTML =
+        '<td><input type="text" class="c-art" placeholder="Kode artikel"></td>' +
+        '<td><input type="text" class="c-desc" placeholder="Deskripsi"></td>' +
+        '<td><input type="number" class="c-stock" min="0" value="0"></td>' +
+        '<td><input type="number" class="c-sales" min="0" value="0"></td>' +
+        '<td><input type="number" class="c-reqqty" min="1" placeholder="0"></td>' +
+        '<td><input type="text" class="c-reason" placeholder="Alasan"></td>' +
+        '<td class="td-del"><button type="button" class="btn-del" onclick="removeRow(' + id + ')">&#x2715;</button></td>';
+      document.getElementById('item-tbody').appendChild(tr);
+    }
+
+    function removeRow(id) {
+      var row = document.querySelector('tr[data-rid="' + id + '"]');
+      if (row) row.remove();
+    }
+
+    function getRows() {
+      return Array.from(document.querySelectorAll('#item-tbody tr')).map(function(row) {
+        return {
+          article:     row.querySelector('.c-art').value.trim(),
+          description: row.querySelector('.c-desc').value.trim(),
+          stockQty:    row.querySelector('.c-stock').value,
+          salesQty:    row.querySelector('.c-sales').value,
+          requestQty:  row.querySelector('.c-reqqty').value,
+          reason:      row.querySelector('.c-reason').value.trim()
+        };
+      });
+    }
+
+    function validate() {
+      var errs = [];
+      [['f-site','Site'],['f-type','Type STR'],['f-supply','Supplying Site'],
+       ['f-dept','Department'],['f-date','Plan Receive Date'],['f-reqby','Requested By']
+      ].forEach(function(pair) {
+        if (!document.getElementById(pair[0]).value) errs.push(pair[1] + ' wajib diisi');
+      });
+      var dateVal = document.getElementById('f-date').value;
+      if (dateVal) {
+        var picked = new Date(dateVal), today = new Date();
+        today.setHours(0,0,0,0);
+        if (picked < today) errs.push('Plan Receive Date tidak boleh masa lalu');
+      }
+      var rows = getRows();
+      if (rows.length === 0) { errs.push('Minimal 1 item harus ditambahkan'); return errs; }
+      if (!rows.some(function(r) { return Number(r.requestQty) > 0; }))
+        errs.push('Minimal 1 item dengan Request Qty > 0');
+      return errs;
+    }
+
+    document.getElementById('str-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var errs  = validate();
+      var errEl = document.getElementById('error-msg');
+      if (errs.length) {
+        errEl.textContent = errs.join(' • ');
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      errEl.style.display = 'none';
+      var siteEl   = document.getElementById('f-site');
+      var siteName = siteEl.options[siteEl.selectedIndex].text.split(' — ').slice(1).join(' — ');
+      var payload  = {
+        header: {
+          site:            siteEl.value,
+          siteName:        siteName,
+          typeStr:         document.getElementById('f-type').value,
+          supplyingSite:   document.getElementById('f-supply').value,
+          department:      document.getElementById('f-dept').value,
+          planReceiveDate: document.getElementById('f-date').value,
+          requestedBy:     document.getElementById('f-reqby').value.trim()
+        },
+        items: getRows()
+      };
+      var btn = document.getElementById('btn-submit');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+          if (!result.success) throw new Error(result.error || 'Submit gagal');
+          document.getElementById('str-number-display').textContent = result.strNumber;
+          show('screen-success');
+        })
+        .catch(function(err) {
+          errEl.textContent = 'Submit gagal: ' + err.message;
+          errEl.style.display = 'block';
+          btn.disabled = false; btn.textContent = 'Submit STR';
+        });
+    });
+
+    document.getElementById('btn-add-item').addEventListener('click', addRow);
+    document.getElementById('btn-back').addEventListener('click', function() { window.history.back(); });
+
+    function resetForm() {
+      document.getElementById('str-form').reset();
+      document.getElementById('item-tbody').innerHTML = '';
+      rowCount = 0;
+      loadDropdowns();
+    }
+
+    window.onload = loadDropdowns;
+  </script>
+</body>
+</html>

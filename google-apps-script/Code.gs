@@ -118,15 +118,15 @@ var BASE        = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
 function getDropdowns() {
   var token = getLarkToken();
 
-  // Sites
+  // Sites — return {code, name} objects agar form.html bisa pakai s.code dan s.name
   var sitesResp = larkApiGet(BASE + MASTER_APP + '/tables/' + MASTER_SITE + '/records?page_size=200', token);
   var sites = (sitesResp.data.items || []).map(function(r) {
-    return fieldText(r.fields['STORE Name']);
-  }).filter(Boolean);
+    return { code: fieldText(r.fields['SITE']), name: fieldText(r.fields['STORE Name']) };
+  }).filter(function(s) { return !!s.code; });
 
-  // STR Types
+  // STR Types — key 'strTypes' sesuai form.html
   var typesResp = larkApiGet(BASE + STR_APP + '/tables/' + STR_TYPE + '/records?page_size=200', token);
-  var types = (typesResp.data.items || []).map(function(r) {
+  var strTypes = (typesResp.data.items || []).map(function(r) {
     var keys = Object.keys(r.fields);
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
@@ -138,7 +138,7 @@ function getDropdowns() {
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
 
-  return { sites: sites, types: types, departments: departments };
+  return { sites: sites, strTypes: strTypes, departments: departments };
 }
 
 // ─── STR Number Generation ────────────────────────────────────────────────────
@@ -297,12 +297,16 @@ function doGet(e) {
       return jsonpOut(e, { status: 'ok', data: result.data });
     }
     if (action === 'getDropdowns') {
+      // form.html menggunakan fetch() biasa, bukan JSONP — kembalikan plain JSON langsung
       var dd = getDropdowns();
-      return jsonpOut(e, { status: 'ok', data: dd });
+      return ContentService.createTextOutput(JSON.stringify(dd))
+        .setMimeType(ContentService.MimeType.JSON);
     }
-    // Default: serve form HTML
-    return HtmlService.createHtmlOutputFromFile('form')
-      .setTitle('STR Request Form')
+    // Default: serve form HTML — harus pakai createTemplateFromFile agar <?= scriptUrl ?> ter-inject
+    var tpl = HtmlService.createTemplateFromFile('form');
+    tpl.scriptUrl = ScriptApp.getService().getUrl();
+    return tpl.evaluate()
+      .setTitle('Request New STR')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (err) {
     return jsonpOut(e, { status: 'error', message: err.message });
@@ -311,20 +315,71 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var body   = JSON.parse(e.postData.contents);
-    var action = body.action;
-    var result;
-    if (action === 'submitSTR') {
-      result = submitSTR(body.data);
-    } else {
-      throw new Error('Unknown action: ' + action);
+    var body = JSON.parse(e.postData.contents);
+
+    // Form HTML submission: { header: {...}, items: [...] }
+    if (body.header && body.items) {
+      var result = submitSTRForm(body.header, body.items);
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
     }
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'ok', data: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+
+    // Legacy action format: { action: 'submitSTR', data: {...} }
+    if (body.action === 'submitSTR') {
+      var r2 = submitSTR(body.data);
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', data: r2 }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    throw new Error('Unknown request format');
   } catch (err) {
     return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .createTextOutput(JSON.stringify({ success: false, error: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// ─── Submit STR dari Form HTML ────────────────────────────────────────────────
+// Dipanggil oleh doPost ketika form.html mengirim { header, items }
+
+function submitSTRForm(header, items) {
+  var token     = getLarkToken();
+  var strNumber = generateSTRNumber(header.site);
+
+  var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + STR_HEADER + '/records', token, {
+    fields: {
+      'STR Number':      strNumber,
+      'Site':            header.site,
+      'Site Name':       header.siteName    || '',
+      'Type STR':        header.typeStr     || '',
+      'Supplying Site':  header.supplyingSite || '',
+      'Department':      header.department  || '',
+      'Plan Receive Date': header.planReceiveDate ? new Date(header.planReceiveDate).getTime() : null,
+      'Requested By':    header.requestedBy || '',
+      'Submit Date':     Date.now(),
+      'Status':          'Waiting Approval by Mgr'
+    }
+  });
+  if (!headerResp.data || !headerResp.data.record) {
+    throw new Error('Gagal buat STR Header: ' + JSON.stringify(headerResp));
+  }
+  var headerId = headerResp.data.record.record_id;
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    larkApiPost(BASE + STR_APP + '/tables/' + STR_DETAIL + '/records', token, {
+      fields: {
+        'STR Number':   [{ id: headerId }],
+        'Row Sequence': i + 1,
+        'Article':      item.article     || '',
+        'Description':  item.description || '',
+        'Stock Qty':    parseFloat(item.stockQty)  || 0,
+        'Sales Qty':    parseFloat(item.salesQty)  || 0,
+        'Request Qty':  parseFloat(item.requestQty) || 0,
+        'Reason':       item.reason      || ''
+      }
+    });
+  }
+
+  return { success: true, strNumber: strNumber };
 }
