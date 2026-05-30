@@ -251,10 +251,35 @@ function doGet(e) {
       var filter    = e.parameter.filter ? JSON.parse(e.parameter.filter) : null;
       var pageSize  = parseInt(e.parameter.pageSize || '500');
       var token     = getLarkToken();
-      var body      = { page_size: pageSize };
-      if (filter) body.filter = filter;
-      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, body);
+      // Fetch tanpa filter API (hindari format issue) — filter di GAS
+      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, { page_size: pageSize });
       var items     = (resp.data && resp.data.items) || [];
+      // Terapkan filter di GAS
+      if (filter && filter.conditions && filter.conditions.length > 0) {
+        items = items.filter(function(item) {
+          var match = filter.conjunction === 'or' ? false : true;
+          for (var i = 0; i < filter.conditions.length; i++) {
+            var cond    = filter.conditions[i];
+            var rawVal  = item.fields[cond.field_name];
+            var textVal = fieldText(rawVal);
+            var condMet = false;
+            if (cond.operator === 'is') {
+              condMet = cond.value.indexOf(textVal) >= 0;
+            } else if (cond.operator === 'isNot') {
+              condMet = cond.value.indexOf(textVal) < 0;
+            } else if (cond.operator === 'contains') {
+              condMet = cond.value.some(function(v) { return textVal.indexOf(v) >= 0; });
+            } else if (cond.operator === 'isEmpty') {
+              condMet = !textVal;
+            } else if (cond.operator === 'isNotEmpty') {
+              condMet = !!textVal;
+            }
+            if (filter.conjunction === 'or') { if (condMet) { match = true; break; } }
+            else { if (!condMet) { match = false; break; } }
+          }
+          return match;
+        });
+      }
       return jsonpOut(e, { status: 'ok', data: { items: items } });
     }
     if (action === 'larkUpdate') {
