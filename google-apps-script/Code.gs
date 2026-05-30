@@ -80,32 +80,27 @@ function getJsapiConfig(pageUrl) {
 // ─── Get User Info by Auth Code ───────────────────────────────────────────────
 
 function getUserByCode(code) {
-  var props     = PropertiesService.getScriptProperties();
-  var appId     = props.getProperty('LARK_APP_ID');
-  var appSecret = props.getProperty('LARK_APP_SECRET');
+  // tt.requestAuthCode (H5 app) → exchange via authen/v1/access_token (bukan OIDC).
+  // Endpoint ini butuh tenant_access_token (Bearer), bukan Basic appId:appSecret.
+  // Response langsung berisi open_id dan name, tidak perlu call user_info terpisah.
+  var token = getLarkToken();
 
-  // Exchange code for user access token
-  var tokenResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/authen/v1/oidc/access_token', {
+  var tokenResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/authen/v1/access_token', {
     method: 'post',
     headers: {
       'Content-Type':  'application/json',
-      'Authorization': 'Basic ' + Utilities.base64Encode(appId + ':' + appSecret)
+      'Authorization': 'Bearer ' + token
     },
     payload: JSON.stringify({ grant_type: 'authorization_code', code: code })
   });
   var tokenData = JSON.parse(tokenResp.getContentText());
-  if (tokenData.code !== 0) throw new Error('getAccessToken failed: ' + tokenData.msg);
-
-  // Get user info
-  var userResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/authen/v1/user_info', {
-    headers: { 'Authorization': 'Bearer ' + tokenData.data.access_token }
-  });
-  var userData = JSON.parse(userResp.getContentText());
-  if (userData.code !== 0) throw new Error('getUserInfo failed: ' + userData.msg);
+  if (tokenData.code !== 0) {
+    throw new Error('getUserByCode failed: ' + JSON.stringify(tokenData));
+  }
 
   return {
-    openId:   userData.data.open_id,
-    nickName: userData.data.name
+    openId:   tokenData.data.open_id || '',
+    nickName: tokenData.data.name    || ''
   };
 }
 
