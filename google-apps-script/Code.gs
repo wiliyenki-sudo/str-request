@@ -213,6 +213,17 @@ function submitSTR(data) {
   return { success: true, strNumber: strNumber, recordId: headerId };
 }
 
+// ─── JSONP helper ────────────────────────────────────────────────────────────
+function jsonpOut(e, obj) {
+  var out = JSON.stringify(obj);
+  var cb  = e.parameter.callback;
+  if (cb) {
+    return ContentService.createTextOutput(cb + '(' + out + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
+}
+
 // ─── Web App Entry Points ─────────────────────────────────────────────────────
 
 function doGet(e) {
@@ -234,21 +245,44 @@ function doGet(e) {
         .createTextOutput(JSON.stringify({ status: 'ok', data: cfg }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    if (action === 'getToken') {
-      var tok = getLarkToken();
-      var out = JSON.stringify({ status: 'ok', data: { token: tok } });
-      var cb  = e.parameter.callback;
-      if (cb) {
-        return ContentService.createTextOutput(cb + '(' + out + ')')
-          .setMimeType(ContentService.MimeType.JAVASCRIPT);
-      }
-      return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'larkSearch') {
+      var appToken  = e.parameter.appToken;
+      var tableId   = e.parameter.tableId;
+      var filter    = e.parameter.filter ? JSON.parse(e.parameter.filter) : null;
+      var pageSize  = parseInt(e.parameter.pageSize || '500');
+      var token     = getLarkToken();
+      var body      = { page_size: pageSize };
+      if (filter) body.filter = filter;
+      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, body);
+      var items     = (resp.data && resp.data.items) || [];
+      return jsonpOut(e, { status: 'ok', data: { items: items } });
+    }
+    if (action === 'larkUpdate') {
+      var appToken  = e.parameter.appToken;
+      var tableId   = e.parameter.tableId;
+      var recordId  = e.parameter.recordId;
+      var fields    = JSON.parse(e.parameter.fields);
+      var token     = getLarkToken();
+      var url       = BASE + appToken + '/tables/' + tableId + '/records/' + recordId;
+      var resp      = UrlFetchApp.fetch(url, {
+        method: 'put',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({ fields: fields })
+      });
+      var result    = JSON.parse(resp.getContentText());
+      return jsonpOut(e, { status: 'ok', data: result.data });
+    }
+    if (action === 'larkCreate') {
+      var appToken  = e.parameter.appToken;
+      var tableId   = e.parameter.tableId;
+      var fields    = JSON.parse(e.parameter.fields);
+      var token     = getLarkToken();
+      var result    = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records', token, { fields: fields });
+      return jsonpOut(e, { status: 'ok', data: result.data });
     }
     if (action === 'getDropdowns') {
       var dd = getDropdowns();
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'ok', data: dd }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return jsonpOut(e, { status: 'ok', data: dd });
     }
     // Default: serve form HTML
     return HtmlService.createHtmlOutputFromFile('form')
