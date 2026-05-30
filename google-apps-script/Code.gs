@@ -232,18 +232,14 @@ function doGet(e) {
     if (action === 'getUserByCode') {
       var code = e.parameter.code;
       if (!code) throw new Error('code parameter required');
-      result = getUserByCode(code);
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'ok', data: result }))
-        .setMimeType(ContentService.MimeType.JSON);
+      var result = getUserByCode(code);
+      return jsonpOut(e, { status: 'ok', data: result });
     }
     if (action === 'jsapiConfig') {
       var pageUrl = decodeURIComponent(e.parameter.url || '');
       if (!pageUrl) throw new Error('url parameter required');
       var cfg = getJsapiConfig(pageUrl);
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'ok', data: cfg }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return jsonpOut(e, { status: 'ok', data: cfg });
     }
     if (action === 'larkSearch') {
       var appToken  = e.parameter.appToken;
