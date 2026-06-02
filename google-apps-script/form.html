@@ -52,6 +52,24 @@
 
     @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 
+    /* Site badge blink */
+    @keyframes siteBlink {
+      0%   { color: #e53935; text-shadow: 0 0 8px #e5393566; }
+      25%  { color: #f57c00; text-shadow: 0 0 8px #f57c0066; }
+      50%  { color: #1565c0; text-shadow: 0 0 8px #1565c066; }
+      75%  { color: #2e7d32; text-shadow: 0 0 8px #2e7d3266; }
+      100% { color: #e53935; text-shadow: 0 0 8px #e5393566; }
+    }
+    .site-badge {
+      font-size: 22px; font-weight: 900; text-align: center;
+      padding: 8px 0 2px; letter-spacing: 1px;
+      animation: siteBlink 1.4s infinite;
+    }
+    .site-badge-sub {
+      font-size: 13px; color: #888; text-align: center;
+      margin-bottom: 14px; font-weight: 400;
+    }
+
     /* Login screen */
     .login-subtitle { font-size: 13px; color: #888; margin: -8px 0 20px; }
     .login-card { background: #fff; border-radius: 10px; padding: 24px 20px; }
@@ -102,6 +120,8 @@
 
     <div id="screen-form" style="display:none">
       <h1>Request New STR</h1>
+      <div id="site-badge" class="site-badge"></div>
+      <div id="site-badge-sub" class="site-badge-sub"></div>
       <form id="str-form" novalidate>
         <div class="form-grid">
           <div class="form-group">
@@ -395,6 +415,11 @@
       // Pre-fill form fields
       document.getElementById('f-site').value  = site;
       document.getElementById('f-reqby').value = nik + ' ' + nama;
+      // Show blinking site badge
+      var lSite = document.getElementById('l-site');
+      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+      document.getElementById('site-badge').textContent     = siteParts[0];
+      document.getElementById('site-badge-sub').textContent = siteParts[1] || '';
       // Ensure at least one item row exists
       if (document.getElementById('item-tbody').rows.length === 0) addRow();
       show('screen-form');
