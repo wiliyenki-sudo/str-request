@@ -179,7 +179,9 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data.error) throw new Error(data.error);
-          var siteOpts = (data.sites || []).map(function(s) {
+          var siteOpts = (data.sites || []).slice().sort(function(a, b) {
+            return a.code < b.code ? -1 : a.code > b.code ? 1 : 0;
+          }).map(function(s) {
             return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
           });
           fillSelect('f-site',   siteOpts);
