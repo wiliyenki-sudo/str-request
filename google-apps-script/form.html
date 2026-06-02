@@ -52,6 +52,13 @@
 
     @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 
+    /* Login screen */
+    .login-subtitle { font-size: 13px; color: #888; margin: -8px 0 20px; }
+    .login-card { background: #fff; border-radius: 10px; padding: 24px 20px; }
+    .login-card .form-group { margin-bottom: 14px; }
+    .btn-next { width: 100%; background: #111; color: #fff; border: none; border-radius: 6px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px; letter-spacing: .3px; }
+    .btn-next:hover { background: #333; }
+
     /* Confirmation modal */
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; }
     .modal-overlay.open { display:flex; }
@@ -70,6 +77,27 @@
     <div id="screen-error" class="screen" style="display:none">
       <p>Gagal memuat data dropdown.</p>
       <button class="btn-back" onclick="loadDropdowns()">Coba Lagi</button>
+    </div>
+
+    <div id="screen-login" style="display:none">
+      <h1>Request New STR</h1>
+      <p class="login-subtitle">Masukkan identitas Anda untuk melanjutkan.</p>
+      <div class="login-card">
+        <div class="form-group">
+          <label for="l-nik">NIK *</label>
+          <input type="text" id="l-nik" placeholder="Contoh: 12333">
+        </div>
+        <div class="form-group">
+          <label for="l-nama">Nama *</label>
+          <input type="text" id="l-nama" placeholder="Nama lengkap">
+        </div>
+        <div class="form-group">
+          <label for="l-site">Site *</label>
+          <select id="l-site"></select>
+        </div>
+        <div id="login-error" class="error-msg" style="display:none"></div>
+        <button type="button" id="btn-next" class="btn-next">Lanjut &#8594;</button>
+      </div>
     </div>
 
     <div id="screen-form" style="display:none">
@@ -157,7 +185,7 @@
     var rowCount = 0;
 
     function show(id) {
-      ['screen-loading','screen-error','screen-form','screen-success'].forEach(function(s) {
+      ['screen-loading','screen-error','screen-login','screen-form','screen-success'].forEach(function(s) {
         document.getElementById(s).style.display = (s === id) ? '' : 'none';
       });
     }
@@ -186,10 +214,10 @@
           });
           fillSelect('f-site',   siteOpts);
           fillSelect('f-supply', siteOpts);
+          fillSelect('l-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
           fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
-          if (document.getElementById('item-tbody').rows.length === 0) addRow();
-          show('screen-form');
+          show('screen-login');
         })
         .catch(function(e) {
           console.error('loadDropdowns error:', e);
@@ -347,7 +375,30 @@
     });
 
     document.getElementById('btn-add-item').addEventListener('click', addRow);
-    document.getElementById('btn-back').addEventListener('click', function() { window.history.back(); });
+    document.getElementById('btn-back').addEventListener('click', function() { show('screen-login'); });
+
+    document.getElementById('btn-next').addEventListener('click', function() {
+      var nik   = document.getElementById('l-nik').value.trim();
+      var nama  = document.getElementById('l-nama').value.trim();
+      var site  = document.getElementById('l-site').value;
+      var errEl = document.getElementById('login-error');
+      var errs  = [];
+      if (!nik)  errs.push('NIK wajib diisi');
+      if (!nama) errs.push('Nama wajib diisi');
+      if (!site) errs.push('Site wajib dipilih');
+      if (errs.length) {
+        errEl.textContent = errs.join(' • ');
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+      // Pre-fill form fields
+      document.getElementById('f-site').value  = site;
+      document.getElementById('f-reqby').value = nik + ' ' + nama;
+      // Ensure at least one item row exists
+      if (document.getElementById('item-tbody').rows.length === 0) addRow();
+      show('screen-form');
+    });
 
     function resetForm() {
       document.getElementById('str-form').reset();
