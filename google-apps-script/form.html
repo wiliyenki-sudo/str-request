@@ -19,6 +19,7 @@
       font-size: 14px; width: 100%; background: #fff;
     }
     select:focus, input:focus { outline: none; border-color: #1a73e8; }
+    select:disabled { background: #f0f4f8; color: #555; cursor: not-allowed; border-color: #d0d0d0; }
 
     hr { border: none; border-top: 1px solid #e0e0e0; margin: 16px 0; }
 
@@ -412,8 +413,10 @@
         return;
       }
       errEl.style.display = 'none';
-      // Pre-fill form fields
-      document.getElementById('f-site').value  = site;
+      // Pre-fill form fields (site locked — back to change)
+      var fSite = document.getElementById('f-site');
+      fSite.value    = site;
+      fSite.disabled = true;
       document.getElementById('f-reqby').value = nik + ' ' + nama;
       // Show blinking site badge
       var lSite = document.getElementById('l-site');
