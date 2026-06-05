@@ -206,18 +206,38 @@ function generateADJNumber(site) {
 function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
   var token     = getLarkToken();
   var fileBytes = Utilities.base64Decode(base64Data);
-  var blob      = Utilities.newBlob(fileBytes, mimeType || 'application/octet-stream', fileName);
-  // Kirim metadata via query params — menghindari error 1061044 "parent node not exist"
-  // yang muncul saat parameter dikirim sebagai multipart form fields
-  var uploadUrl = 'https://open.larksuite.com/open-apis/drive/v1/medias/upload_all' +
-    '?file_name='   + encodeURIComponent(fileName) +
-    '&parent_type=bitable_file' +
-    '&parent_node=' + encodeURIComponent(appToken) +
-    '&size='        + fileBytes.length;
-  var resp = UrlFetchApp.fetch(uploadUrl, {
+  var ct        = mimeType || 'application/octet-stream';
+
+  // Bangun multipart/form-data secara manual.
+  // GAS's built-in multipart encoding menyebabkan error 1061002/1061044 pada Lark upload API —
+  // manual build memberi kontrol penuh atas format boundary + headers.
+  var boundary = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
+  var nl = '\r\n';
+  var preText =
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="file_name"' + nl + nl + fileName + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="parent_node"' + nl + nl + appToken + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="size"' + nl + nl + String(fileBytes.length) + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="file"; filename="' + fileName + '"' + nl +
+    'Content-Type: ' + ct + nl + nl;
+  var postText = nl + '--' + boundary + '--' + nl;
+
+  var allBytes = Utilities.newBlob(preText).getBytes()
+    .concat(fileBytes)
+    .concat(Utilities.newBlob(postText).getBytes());
+
+  var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/drive/v1/medias/upload_all', {
     method:             'post',
-    headers:            { 'Authorization': 'Bearer ' + token },
-    payload:            { 'file': blob },
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type':  'multipart/form-data; boundary=' + boundary
+    },
+    payload:            allBytes,
     muteHttpExceptions: true
   });
   var result = JSON.parse(resp.getContentText());

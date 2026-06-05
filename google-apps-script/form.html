@@ -204,7 +204,7 @@
         </div>
         <div class="form-group">
           <label for="a-dept">Department *</label>
-          <input type="text" id="a-dept" placeholder="Nama department">
+          <select id="a-dept"><option value="">-- Pilih --</option></select>
         </div>
         <div class="form-group">
           <label for="a-jenis">Jenis Adjustment *</label>
@@ -314,6 +314,7 @@
           fillSelect('l-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
           fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
+          fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
           show('screen-login');
         })
         .catch(function(e) {
@@ -612,7 +613,7 @@
       var errs  = [];
       var jenis = document.getElementById('a-jenis').value;
       var isA2A = jenis === 'Article to Article';
-      if (!document.getElementById('a-dept').value.trim()) errs.push('Department wajib diisi');
+      if (!document.getElementById('a-dept').value) errs.push('Department wajib diisi');
       if (!jenis)                                           errs.push('Jenis Adjustment wajib dipilih');
       if (!document.getElementById('a-ket').value)         errs.push('Keterangan Adjustment wajib dipilih');
       var f = document.getElementById('a-attachment').files;
