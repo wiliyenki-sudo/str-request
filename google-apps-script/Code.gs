@@ -211,6 +211,8 @@ function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
   // Bangun multipart/form-data secara manual.
   // GAS's built-in multipart encoding menyebabkan error 1061002/1061044 pada Lark upload API —
   // manual build memberi kontrol penuh atas format boundary + headers.
+  // extra wajib untuk bitable_file — tanpa ini Lark Drive tidak bisa resolve parent node
+  var extra    = JSON.stringify({ bitable: appToken });
   var boundary = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
   var nl = '\r\n';
   var preText =
@@ -222,6 +224,8 @@ function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
     'Content-Disposition: form-data; name="parent_node"' + nl + nl + appToken + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="size"' + nl + nl + String(fileBytes.length) + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="extra"' + nl + nl + extra + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="file"; filename="' + fileName + '"' + nl +
     'Content-Type: ' + ct + nl + nl;
