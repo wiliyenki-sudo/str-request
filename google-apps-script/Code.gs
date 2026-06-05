@@ -203,22 +203,47 @@ function generateADJNumber(site) {
 
 // ─── File Upload to Lark Drive (for Lark Base attachment fields) ──────────────
 
-// ─── Google Drive Upload (fallback dari Lark Drive yang butuh bitable_file access) ──
-// File disimpan di Google Drive milik GAS script owner, URL disimpan di Lark field teks.
-
-function getOrCreateUploadFolder() {
-  var folders = DriveApp.getFoldersByName('STR_ADJ_Attachments');
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder('STR_ADJ_Attachments');
-}
-
-function uploadFileToGDrive(base64Data, fileName, mimeType) {
-  var bytes  = Utilities.base64Decode(base64Data);
-  var blob   = Utilities.newBlob(bytes, mimeType || 'application/octet-stream', fileName);
-  var folder = getOrCreateUploadFolder();
-  var file   = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return file.getUrl();
+// ─── Lark Drive Upload — upload file ke Bitable attachment field ─────────────
+// parent_node = app_token Base, extra.bitable = app_token Base
+function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) {
+  var token     = getLarkToken();
+  var fileBytes = Utilities.base64Decode(base64Data);
+  var ct        = mimeType || 'application/octet-stream';
+  var extra     = JSON.stringify({ bitable: appToken || parentNode });
+  var boundary  = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
+  var nl = '\r\n';
+  var preText =
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="file_name"' + nl + nl + fileName + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="parent_node"' + nl + nl + parentNode + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="size"' + nl + nl + String(fileBytes.length) + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="extra"' + nl + nl + extra + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="file"; filename="' + fileName + '"' + nl +
+    'Content-Type: ' + ct + nl + nl;
+  var postText = nl + '--' + boundary + '--' + nl;
+  var allBytes = Utilities.newBlob(preText).getBytes()
+    .concat(fileBytes)
+    .concat(Utilities.newBlob(postText).getBytes());
+  var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/drive/v1/medias/upload_all', {
+    method:  'post',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type':  'multipart/form-data; boundary=' + boundary
+    },
+    payload:            allBytes,
+    muteHttpExceptions: true
+  });
+  var result = JSON.parse(resp.getContentText());
+  if (result.code !== 0) {
+    throw new Error('uploadFileToLark failed: ' + result.msg + ' | ' + resp.getContentText().slice(0, 200));
+  }
+  return result.data.file_token;
 }
 
 // ─── Submit ADJ dari Form HTML ────────────────────────────────────────────────
@@ -227,15 +252,14 @@ function submitADJForm(header, items, attachment) {
   var token     = getLarkToken();
   var adjNumber = generateADJNumber(header.site);
 
+  var attachmentField   = null;
   var attachmentWarning = null;
-  // Build keterangan — attachment URL (Google Drive) di-append jika ada file
-  var keteranganValue = header.keterangan || '';
   if (attachment && attachment.data_base64) {
     try {
-      var attachUrl = uploadFileToGDrive(attachment.data_base64, attachment.name, attachment.type);
-      keteranganValue += (keteranganValue ? '\n' : '') + 'Lampiran: ' + attachUrl;
+      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP, STR_APP);
+      attachmentField = [{ file_token: fileToken, name: attachment.name }];
     } catch(uploadErr) {
-      attachmentWarning = 'Upload ke Google Drive gagal: ' + uploadErr.message.slice(0, 100);
+      attachmentWarning = uploadErr.message.slice(0, 120);
       Logger.log('ADJ attachment upload failed (non-fatal): ' + uploadErr.message);
     }
   }
@@ -246,7 +270,8 @@ function submitADJForm(header, items, attachment) {
       'Site':                  header.site        || '',
       'Department':            header.department  || '',
       'Jenis Adjusment':       header.jenis       || '',   // typo di nama field Lark Base
-      'Keterangan Adjustment': keteranganValue,
+      'Keterangan Adjustment': header.keterangan  || '',
+      'Attachment':            attachmentField,
       'Requested By':          header.requestedBy || '',
       'Submit Date':           Date.now(),
       'Status':                'Waiting Create by ICO'
@@ -466,16 +491,13 @@ function doPost(e) {
       });
       var srItems = (srResp.data && srResp.data.items) || [];
       if (srItems.length === 0) throw new Error('ADJ tidak ditemukan: ' + adjNum);
-      var recId      = srItems[0].record_id;
-      var baUrl      = uploadFileToGDrive(ba.data_base64, ba.name, ba.type);
-      // Append BA URL ke Keterangan Adjustment (baca nilai saat ini dari record yg sudah diambil)
-      var currentKet = fieldText((srItems[0].fields || {})['Keterangan Adjustment']) || '';
-      var newKet     = currentKet + (currentKet ? '\n' : '') + 'BA Salju Rugi: ' + baUrl;
-      var upUrl      = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
+      var recId   = srItems[0].record_id;
+      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, STR_APP, STR_APP);
+      var upUrl   = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
       UrlFetchApp.fetch(upUrl, {
         method:  'put',
         headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
-        payload: JSON.stringify({ fields: { 'Keterangan Adjustment': newKet } })
+        payload: JSON.stringify({ fields: { 'BA Salju Rugi': [{ file_token: baToken, name: ba.name }] } })
       });
       return ContentService.createTextOutput(JSON.stringify({ success: true }))
         .setMimeType(ContentService.MimeType.JSON);
