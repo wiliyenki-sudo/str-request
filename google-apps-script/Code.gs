@@ -216,7 +216,7 @@ function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="file_name"' + nl + nl + fileName + nl +
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
+    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_image' + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="parent_node"' + nl + nl + appToken + nl +
     '--' + boundary + nl +
