@@ -203,38 +203,26 @@ function generateADJNumber(site) {
 
 // ─── File Upload to Lark Drive (for Lark Base attachment fields) ──────────────
 
-function uploadFileToLark(base64Data, fileName, mimeType) {
+function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
   var token     = getLarkToken();
   var fileBytes = Utilities.base64Decode(base64Data);
   var ct        = mimeType || 'application/octet-stream';
+  // extra wajib untuk bitable_file — memberitahu Bitable mana yang punya file ini
+  var extra     = JSON.stringify({ bitable: appToken });
 
-  // ── Step 1: Ambil root folder token Drive milik bot ──────────────────────────
-  // Upload ke parent_type "explorer" (Drive root bot) jauh lebih reliable
-  // dibanding parent_type "bitable_file" yang selalu return 1061044 karena
-  // Bitable API access ≠ Drive node access untuk tenant_access_token.
-  // file_token hasil upload explorer tetap valid sebagai attachment Bitable.
-  var rootResp = UrlFetchApp.fetch(
-    'https://open.larksuite.com/open-apis/drive/explorer/v2/root_folder/meta',
-    { headers: { 'Authorization': 'Bearer ' + token }, muteHttpExceptions: true }
-  );
-  var rootData = JSON.parse(rootResp.getContentText());
-  if (rootData.code !== 0) {
-    throw new Error('getRootFolder failed: ' + JSON.stringify(rootData).slice(0, 200));
-  }
-  var folderToken = rootData.data.token;
-
-  // ── Step 2: Upload file ke Drive root folder ──────────────────────────────────
   var boundary = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
   var nl = '\r\n';
   var preText =
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="file_name"' + nl + nl + fileName + nl +
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'explorer' + nl +
+    'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="parent_node"' + nl + nl + folderToken + nl +
+    'Content-Disposition: form-data; name="parent_node"' + nl + nl + appToken + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="size"' + nl + nl + String(fileBytes.length) + nl +
+    '--' + boundary + nl +
+    'Content-Disposition: form-data; name="extra"' + nl + nl + extra + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="file"; filename="' + fileName + '"' + nl +
     'Content-Type: ' + ct + nl + nl;
@@ -270,7 +258,7 @@ function submitADJForm(header, items, attachment) {
   var attachmentWarning = null;
   if (attachment && attachment.data_base64) {
     try {
-      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type);
+      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP);
       attachmentField = [{ file_token: fileToken, name: attachment.name }];
     } catch(uploadErr) {
       // Upload gagal (biasanya karena belum ada scope drive:drive di Lark app).
@@ -509,7 +497,7 @@ function doPost(e) {
       var srItems = (srResp.data && srResp.data.items) || [];
       if (srItems.length === 0) throw new Error('ADJ tidak ditemukan: ' + adjNum);
       var recId   = srItems[0].record_id;
-      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type);
+      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, STR_APP);
       var upUrl   = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
       UrlFetchApp.fetch(upUrl, {
         method:  'put',
