@@ -430,10 +430,12 @@ function doGet(e) {
       var resp      = UrlFetchApp.fetch(url, {
         method: 'put',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        payload: JSON.stringify({ fields: fields })
+        payload: JSON.stringify({ fields: fields }),
+        muteHttpExceptions: true
       });
-      var result    = JSON.parse(resp.getContentText());
-      return jsonpOut(e, { status: 'ok', data: result.data });
+      var result = JSON.parse(resp.getContentText());
+      if (result.code !== 0) throw new Error('Lark update error ' + result.code + ': ' + result.msg);
+      return jsonpOut(e, { status: 'ok', data: result.data || {} });
     }
     if (action === 'larkCreate') {
       var appToken  = e.parameter.appToken;
@@ -441,7 +443,8 @@ function doGet(e) {
       var fields    = JSON.parse(e.parameter.fields);
       var token     = getLarkToken();
       var result    = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records', token, { fields: fields });
-      return jsonpOut(e, { status: 'ok', data: result.data });
+      if (result.code !== 0) throw new Error('Lark create error ' + result.code + ': ' + result.msg);
+      return jsonpOut(e, { status: 'ok', data: result.data || {} });
     }
     if (action === 'getDropdowns') {
       // form.html menggunakan fetch() biasa, bukan JSONP — kembalikan plain JSON langsung
