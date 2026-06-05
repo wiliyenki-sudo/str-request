@@ -252,12 +252,21 @@ function submitADJForm(header, items, attachment) {
   var token     = getLarkToken();
   var adjNumber = generateADJNumber(header.site);
 
+  Logger.log('submitADJForm: adjNumber=' + adjNumber + ' itemsCount=' + (items ? items.length : 'null'));
+  Logger.log('submitADJForm: items=' + JSON.stringify(items));
+
+  // Validasi items tidak kosong
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw new Error('items kosong atau tidak valid: ' + JSON.stringify(items));
+  }
+
   var attachmentField   = null;
   var attachmentWarning = null;
   if (attachment && attachment.data_base64) {
     try {
       var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP, STR_APP);
       attachmentField = [{ file_token: fileToken, name: attachment.name }];
+      Logger.log('submitADJForm: attachment uploaded, fileToken=' + fileToken);
     } catch(uploadErr) {
       attachmentWarning = uploadErr.message.slice(0, 120);
       Logger.log('ADJ attachment upload failed (non-fatal): ' + uploadErr.message);
@@ -280,9 +289,11 @@ function submitADJForm(header, items, attachment) {
   if (!headerResp.data || !headerResp.data.record) {
     throw new Error('Gagal buat ADJ Header: ' + JSON.stringify(headerResp));
   }
+  Logger.log('submitADJForm: header OK record_id=' + headerResp.data.record.record_id);
 
   for (var i = 0; i < items.length; i++) {
     var item       = items[i];
+    Logger.log('submitADJForm: detail baris ' + (i+1) + ' from=' + item.fromArticle + ' to=' + item.toArticle + ' qty=' + item.qty);
     var detailResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
       fields: {
         'ADJ Number':   adjNumber,
@@ -291,12 +302,13 @@ function submitADJForm(header, items, attachment) {
         'Qty':          parseFloat(item.qty) || 0
       }
     });
+    Logger.log('submitADJForm: detail resp baris ' + (i+1) + ' = ' + JSON.stringify(detailResp));
     if (!detailResp.data || !detailResp.data.record) {
       throw new Error('Gagal buat ADJ Detail baris ' + (i + 1) + ': ' + JSON.stringify(detailResp));
     }
   }
 
-  return { success: true, adjNumber: adjNumber, attachmentWarning: attachmentWarning };
+  return { success: true, adjNumber: adjNumber, itemsCreated: items.length, attachmentWarning: attachmentWarning };
 }
 
 // ─── Submit STR ───────────────────────────────────────────────────────────────

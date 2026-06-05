@@ -456,6 +456,9 @@
         return;
       }
       errEl.style.display = 'none';
+      document.getElementById('confirm-modal').querySelector('.modal-msg').innerHTML =
+        'Pastikan data site dan supplying sudah benar.<br>Apakah anda yakin submit data?';
+      _pendingSubmit = doSubmit;
       document.getElementById('confirm-modal').classList.add('open');
     });
 
@@ -465,9 +468,11 @@
     });
 
     // ── Modal: Ya, Submit ─────────────────────────────────────────────────────
+    // _pendingSubmit diset oleh STR atau ADJ sebelum modal dibuka
+    var _pendingSubmit = null;
     document.getElementById('confirm-ok').addEventListener('click', function() {
       document.getElementById('confirm-modal').classList.remove('open');
-      doSubmit();
+      if (typeof _pendingSubmit === 'function') { var fn = _pendingSubmit; _pendingSubmit = null; fn(); }
     });
 
     // Klik overlay (luar box) → tutup modal
@@ -697,7 +702,10 @@
         return;
       }
       errEl.style.display = 'none';
-      doADJSubmit();
+      document.getElementById('confirm-modal').querySelector('.modal-msg').innerHTML =
+        'Pastikan data Site dan article sudah sesuai.<br>Apakah anda yakin submit?';
+      _pendingSubmit = doADJSubmit;
+      document.getElementById('confirm-modal').classList.add('open');
     });
 
     function resetForm() {
