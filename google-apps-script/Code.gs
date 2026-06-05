@@ -266,10 +266,18 @@ function submitADJForm(header, items, attachment) {
   var token     = getLarkToken();
   var adjNumber = generateADJNumber(header.site);
 
-  var attachmentField = null;
+  var attachmentField  = null;
+  var attachmentWarning = null;
   if (attachment && attachment.data_base64) {
-    var fileToken = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type);
-    attachmentField = [{ file_token: fileToken, name: attachment.name }];
+    try {
+      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type);
+      attachmentField = [{ file_token: fileToken, name: attachment.name }];
+    } catch(uploadErr) {
+      // Upload gagal (biasanya karena belum ada scope drive:drive di Lark app).
+      // ADJ record tetap dibuat, attachment di-skip — user dapat warning di form.
+      attachmentWarning = uploadErr.message.slice(0, 120);
+      Logger.log('ADJ attachment upload failed (non-fatal): ' + uploadErr.message);
+    }
   }
 
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records', token, {
@@ -303,7 +311,7 @@ function submitADJForm(header, items, attachment) {
     });
   }
 
-  return { success: true, adjNumber: adjNumber };
+  return { success: true, adjNumber: adjNumber, attachmentWarning: attachmentWarning };
 }
 
 // ─── Submit STR ───────────────────────────────────────────────────────────────

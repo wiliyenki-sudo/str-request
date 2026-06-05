@@ -657,7 +657,9 @@
           .then(function(result) {
             if (!result.success) throw new Error(result.error || 'Submit gagal');
             document.getElementById('success-title').textContent = 'ADJ Request Berhasil!';
-            document.getElementById('success-label').textContent = 'Nomor ADJ kamu:';
+            document.getElementById('success-label').textContent = result.attachmentWarning
+              ? '⚠️ ADJ tersimpan tapi attachment gagal (Lark App perlu scope drive:drive). Nomor ADJ:'
+              : 'Nomor ADJ kamu:';
             document.getElementById('success-btn').textContent   = 'Buat ADJ Baru';
             document.getElementById('str-number-display').textContent = result.adjNumber;
             show('screen-success');
