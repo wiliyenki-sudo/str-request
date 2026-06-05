@@ -259,7 +259,7 @@ function submitADJForm(header, items, attachment) {
   var attachmentWarning = null;
   if (attachment && attachment.data_base64) {
     try {
-      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, ADJ_HEADER, STR_APP);
+      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP, STR_APP);
       attachmentField = [{ file_token: fileToken, name: attachment.name }];
     } catch(uploadErr) {
       // Upload gagal (biasanya karena belum ada scope drive:drive di Lark app).
@@ -509,7 +509,7 @@ function doPost(e) {
       var srItems = (srResp.data && srResp.data.items) || [];
       if (srItems.length === 0) throw new Error('ADJ tidak ditemukan: ' + adjNum);
       var recId   = srItems[0].record_id;
-      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, ADJ_HEADER, STR_APP);
+      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, STR_APP, STR_APP);
       var upUrl   = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
       UrlFetchApp.fetch(upUrl, {
         method:  'put',
