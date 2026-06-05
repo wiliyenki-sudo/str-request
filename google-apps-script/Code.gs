@@ -282,16 +282,18 @@ function submitADJForm(header, items, attachment) {
   }
 
   for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
+    var item       = items[i];
+    var detailResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
       fields: {
         'ADJ Number':   adjNumber,
-        'Row Sequence': i + 1,
         'From Article': item.fromArticle || '',
         'To Article':   item.toArticle   || '',
         'Qty':          parseFloat(item.qty) || 0
       }
     });
+    if (!detailResp.data || !detailResp.data.record) {
+      throw new Error('Gagal buat ADJ Detail baris ' + (i + 1) + ': ' + JSON.stringify(detailResp));
+    }
   }
 
   return { success: true, adjNumber: adjNumber, attachmentWarning: attachmentWarning };
