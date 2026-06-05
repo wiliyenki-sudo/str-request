@@ -108,7 +108,7 @@ function getUserByCode(code) {
 
 var MASTER_APP  = 'CBu2bJJfraK08es2cnolJbMlgFe';
 var MASTER_SITE = 'tbl1vV6z4FJ2Ge07';
-var STR_APP     = 'NU3RwtirZipu3sk9nD8l7axOgHc';
+var STR_APP     = 'Z0BrbJIloaJtSxsOTY4lOsQagEb';
 var STR_TYPE    = 'tblfBWxKU8Fh7EMJ';
 var DEPT_TABLE  = 'tblH112oh1QPLPiZ';
 var STR_HEADER  = 'tblQ7qPdqgZ6QcOg';
