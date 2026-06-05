@@ -203,12 +203,13 @@ function generateADJNumber(site) {
 
 // ─── File Upload to Lark Drive (for Lark Base attachment fields) ──────────────
 
-function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
+// parentNode = nilai yang dicoba sebagai parent_node (bisa app_token atau table_id)
+// appToken   = app_token Bitable untuk field extra
+function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) {
   var token     = getLarkToken();
   var fileBytes = Utilities.base64Decode(base64Data);
   var ct        = mimeType || 'application/octet-stream';
-  // extra wajib untuk bitable_file — memberitahu Bitable mana yang punya file ini
-  var extra     = JSON.stringify({ bitable: appToken });
+  var extra     = JSON.stringify({ bitable: appToken || parentNode });
 
   var boundary = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
   var nl = '\r\n';
@@ -218,7 +219,7 @@ function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="parent_node"' + nl + nl + appToken + nl +
+    'Content-Disposition: form-data; name="parent_node"' + nl + nl + parentNode + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="size"' + nl + nl + String(fileBytes.length) + nl +
     '--' + boundary + nl +
@@ -258,7 +259,7 @@ function submitADJForm(header, items, attachment) {
   var attachmentWarning = null;
   if (attachment && attachment.data_base64) {
     try {
-      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP);
+      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, ADJ_HEADER, STR_APP);
       attachmentField = [{ file_token: fileToken, name: attachment.name }];
     } catch(uploadErr) {
       // Upload gagal (biasanya karena belum ada scope drive:drive di Lark app).
@@ -433,6 +434,18 @@ function doGet(e) {
       var result    = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records', token, { fields: fields });
       return jsonpOut(e, { status: 'ok', data: result.data });
     }
+    if (action === 'debugMeta') {
+      // Debug: lihat Drive meta & coba upload kecil untuk diagnosa 1061044
+      var dtok = getLarkToken();
+      var metaResp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/drive/v1/metas/batch_query', {
+        method: 'post',
+        headers: { 'Authorization': 'Bearer ' + dtok, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({ request_docs: [{ doc_token: STR_APP, doc_type: 'bitable' }] }),
+        muteHttpExceptions: true
+      });
+      return ContentService.createTextOutput(metaResp.getContentText())
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'getDropdowns') {
       // form.html menggunakan fetch() biasa, bukan JSONP — kembalikan plain JSON langsung
       var dd = getDropdowns();
@@ -496,7 +509,7 @@ function doPost(e) {
       var srItems = (srResp.data && srResp.data.items) || [];
       if (srItems.length === 0) throw new Error('ADJ tidak ditemukan: ' + adjNum);
       var recId   = srItems[0].record_id;
-      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, STR_APP);
+      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, ADJ_HEADER, STR_APP);
       var upUrl   = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
       UrlFetchApp.fetch(upUrl, {
         method:  'put',
