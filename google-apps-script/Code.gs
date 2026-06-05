@@ -207,17 +207,17 @@ function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
   var token     = getLarkToken();
   var fileBytes = Utilities.base64Decode(base64Data);
   var blob      = Utilities.newBlob(fileBytes, mimeType || 'application/octet-stream', fileName);
-  var payload   = {
-    'file_name':   fileName,
-    'parent_type': 'bitable_file',
-    'parent_node': appToken,
-    'size':        String(fileBytes.length),
-    'file':        blob
-  };
-  var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/drive/v1/medias/upload_all', {
+  // Kirim metadata via query params — menghindari error 1061044 "parent node not exist"
+  // yang muncul saat parameter dikirim sebagai multipart form fields
+  var uploadUrl = 'https://open.larksuite.com/open-apis/drive/v1/medias/upload_all' +
+    '?file_name='   + encodeURIComponent(fileName) +
+    '&parent_type=bitable_file' +
+    '&parent_node=' + encodeURIComponent(appToken) +
+    '&size='        + fileBytes.length;
+  var resp = UrlFetchApp.fetch(uploadUrl, {
     method:             'post',
     headers:            { 'Authorization': 'Bearer ' + token },
-    payload:            payload,
+    payload:            { 'file': blob },
     muteHttpExceptions: true
   });
   var result = JSON.parse(resp.getContentText());

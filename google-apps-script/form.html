@@ -559,6 +559,30 @@
           '<td><input type="number" class="a-qty" min="1" placeholder="0"></td>' +
           '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>';
       document.getElementById('adj-tbody').appendChild(tr);
+
+      // ── Enter key navigation per baris ────────────────────────────────────────
+      var inp1 = tr.querySelector('.a-from-art');
+      var inpQ = tr.querySelector('.a-qty');
+      function adjEnter(from, to, selectAll) {
+        from.addEventListener('keydown', function(e) {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          to.focus();
+          if (selectAll) to.select();
+        });
+      }
+      if (isA2A) {
+        var inp2 = tr.querySelector('.a-to-art');
+        adjEnter(inp1, inp2, false);  // From Article → To Article
+        adjEnter(inp2, inpQ, true);   // To Article → Qty (select all)
+      } else {
+        adjEnter(inp1, inpQ, true);   // Article → Qty (select all)
+      }
+      inpQ.addEventListener('keydown', function(e) {  // Qty → tombol Tambah Item
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        document.getElementById('adj-btn-add').focus();
+      });
     }
 
     function removeAdjRow(id) {
@@ -652,6 +676,12 @@
     document.getElementById('adj-btn-add').addEventListener('click', function() {
       if (!document.getElementById('a-jenis').value) { alert('Pilih Jenis Adjustment dulu.'); return; }
       addAdjRow();
+      // Setelah tambah baris (via klik atau Enter) → fokus ke From Article baris paling bawah
+      var rows = document.getElementById('adj-tbody').rows;
+      if (rows.length > 0) {
+        var first = rows[rows.length - 1].querySelector('.a-from-art');
+        if (first) setTimeout(function() { first.focus(); }, 0);
+      }
     });
     document.getElementById('adj-btn-back').addEventListener('click', function() { show('screen-login'); });
     document.getElementById('adj-btn-submit').addEventListener('click', function() {
