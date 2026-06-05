@@ -113,6 +113,8 @@ var STR_TYPE    = 'tblfBWxKU8Fh7EMJ';
 var DEPT_TABLE  = 'tblH112oh1QPLPiZ';
 var STR_HEADER  = 'tblQ7qPdqgZ6QcOg';
 var STR_DETAIL  = 'tbluAki3HiMe1ppg';
+var ADJ_HEADER  = 'tblFGno3ONx4BseJ';
+var ADJ_DETAIL  = 'tblUShPPgJW3fqBn';
 var BASE        = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
 
 function getDropdowns() {
@@ -174,6 +176,101 @@ function generateSTRNumber(site) {
   var seq     = ('000' + (count + 1)).slice(-3);
   var siteCode = site ? site.replace(/\s/g,'').toUpperCase().slice(0, 4) : 'STR';
   return 'STR-' + siteCode + '-' + dateStr + '-' + seq;
+}
+
+// ─── ADJ Number Generation ────────────────────────────────────────────────────
+
+function generateADJNumber(site) {
+  var now     = new Date();
+  var yy      = now.getFullYear().toString().slice(-2);
+  var mm      = ('0' + (now.getMonth() + 1)).slice(-2);
+  var dd      = ('0' + now.getDate()).slice(-2);
+  var dateStr = yy + mm + dd;
+
+  var token = getLarkToken();
+  var resp  = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/search', token, {
+    filter: {
+      conjunction: 'and',
+      conditions: [{ field_name: 'ADJ Number', operator: 'contains', value: [dateStr] }]
+    },
+    page_size: 200
+  });
+  var count    = ((resp.data && resp.data.items) || []).length;
+  var seq      = ('000' + (count + 1)).slice(-3);
+  var siteCode = site ? site.replace(/\s/g, '').toUpperCase().slice(0, 4) : 'ADJ';
+  return 'ADJ-' + siteCode + '-' + dateStr + '-' + seq;
+}
+
+// ─── File Upload to Lark Drive (for Lark Base attachment fields) ──────────────
+
+function uploadFileToLark(base64Data, fileName, mimeType, appToken) {
+  var token     = getLarkToken();
+  var fileBytes = Utilities.base64Decode(base64Data);
+  var blob      = Utilities.newBlob(fileBytes, mimeType || 'application/octet-stream', fileName);
+  var payload   = {
+    'file_name':   fileName,
+    'parent_type': 'bitable_file',
+    'parent_node': appToken,
+    'size':        String(fileBytes.length),
+    'file':        blob
+  };
+  var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/drive/v1/medias/upload_all', {
+    method:             'post',
+    headers:            { 'Authorization': 'Bearer ' + token },
+    payload:            payload,
+    muteHttpExceptions: true
+  });
+  var result = JSON.parse(resp.getContentText());
+  if (result.code !== 0) {
+    throw new Error('uploadFileToLark failed: ' + result.msg + ' | ' + resp.getContentText().slice(0, 200));
+  }
+  return result.data.file_token;
+}
+
+// ─── Submit ADJ dari Form HTML ────────────────────────────────────────────────
+
+function submitADJForm(header, items, attachment) {
+  var token     = getLarkToken();
+  var adjNumber = generateADJNumber(header.site);
+
+  var attachmentField = null;
+  if (attachment && attachment.data_base64) {
+    var fileToken = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP);
+    attachmentField = [{ file_token: fileToken, name: attachment.name }];
+  }
+
+  var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records', token, {
+    fields: {
+      'ADJ Number':            adjNumber,
+      'Site':                  header.site        || '',
+      'Site Name':             header.siteName    || '',
+      'Department':            header.department  || '',
+      'Jenis Adjustment':      header.jenis       || '',
+      'Keterangan Adjustment': header.keterangan  || '',
+      'Attachment':            attachmentField,
+      'Requested By':          header.requestedBy || '',
+      'Submit Date':           Date.now(),
+      'Status':                'Waiting Create by ICO'
+    }
+  });
+  if (!headerResp.data || !headerResp.data.record) {
+    throw new Error('Gagal buat ADJ Header: ' + JSON.stringify(headerResp));
+  }
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
+      fields: {
+        'ADJ Number':   adjNumber,
+        'Row Sequence': i + 1,
+        'From Article': item.fromArticle || '',
+        'To Article':   item.toArticle   || '',
+        'Qty':          parseFloat(item.qty) || 0
+      }
+    });
+  }
+
+  return { success: true, adjNumber: adjNumber };
 }
 
 // ─── Submit STR ───────────────────────────────────────────────────────────────
@@ -314,6 +411,15 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify(dd))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    if (action === 'baUploadForm') {
+      var adjNum = e.parameter.adjNumber || '';
+      var tpl    = HtmlService.createTemplateFromFile('adj-ba-upload');
+      tpl.scriptUrl = ScriptApp.getService().getUrl();
+      tpl.adjNumber = adjNum;
+      return tpl.evaluate()
+        .setTitle('Upload BA Salju Rugi')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
     // Default: serve form HTML — harus pakai createTemplateFromFile agar <?= scriptUrl ?> ter-inject
     var tpl = HtmlService.createTemplateFromFile('form');
     tpl.scriptUrl = ScriptApp.getService().getUrl();
@@ -340,6 +446,36 @@ function doPost(e) {
     if (body.action === 'submitSTR') {
       var r2 = submitSTR(body.data);
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', data: r2 }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ADJ Form submission: { adjHeader: {...}, adjItems: [...], attachment: {...} }
+    if (body.adjHeader && body.adjItems) {
+      var adjResult = submitADJForm(body.adjHeader, body.adjItems, body.attachment || null);
+      return ContentService.createTextOutput(JSON.stringify(adjResult))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // BA Salju Rugi upload: { action: 'uploadBA', adjNumber, attachment }
+    if (body.action === 'uploadBA') {
+      var adjNum  = body.adjNumber || '';
+      var ba      = body.attachment;
+      var tok     = getLarkToken();
+      var srResp  = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/search', tok, {
+        filter: { conjunction: 'and', conditions: [{ field_name: 'ADJ Number', operator: 'is', value: [adjNum] }] },
+        page_size: 1
+      });
+      var srItems = (srResp.data && srResp.data.items) || [];
+      if (srItems.length === 0) throw new Error('ADJ tidak ditemukan: ' + adjNum);
+      var recId   = srItems[0].record_id;
+      var baToken = uploadFileToLark(ba.data_base64, ba.name, ba.type, STR_APP);
+      var upUrl   = BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/' + recId;
+      UrlFetchApp.fetch(upUrl, {
+        method:  'put',
+        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({ fields: { 'BA Salju Rugi': [{ file_token: baToken, name: ba.name }] } })
+      });
+      return ContentService.createTextOutput(JSON.stringify({ success: true }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 

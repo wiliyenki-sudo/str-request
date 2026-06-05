@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload BA Salju Rugi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           font-size: 14px; background: #f5f5f5; padding: 24px 16px; }
+    .card { background: #fff; border-radius: 10px; padding: 24px 20px;
+            max-width: 420px; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    h2 { font-size: 16px; margin-bottom: 4px; }
+    .adj-num { font-size: 13px; color: #e8711a; font-weight: 700; margin-bottom: 20px; }
+    label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px; }
+    input[type=file] { width: 100%; padding: 8px; border: 1px solid #d0d0d0;
+                       border-radius: 6px; font-size: 13px; }
+    .btn { width: 100%; background: #e8711a; color: #fff; border: none;
+           border-radius: 8px; padding: 13px; font-size: 15px;
+           font-weight: 600; cursor: pointer; margin-top: 16px; }
+    .btn:disabled { background: #888; cursor: not-allowed; }
+    .msg { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; display: none; }
+    .msg.ok  { background: #e8f5e9; color: #2e7d32; display: block; }
+    .msg.err { background: #fff0f0; color: #c62828; display: block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Upload BA Salju Rugi</h2>
+    <p class="adj-num">ADJ: <?= adjNumber ?></p>
+    <label for="ba-file">Pilih file BA (foto / PDF) *</label>
+    <input type="file" id="ba-file" accept="image/*,.pdf">
+    <button class="btn" id="btn-upload">Upload BA</button>
+    <div id="msg" class="msg"></div>
+  </div>
+  <script>
+    var SCRIPT_URL = '<?= scriptUrl ?>';
+    var ADJ_NUMBER = '<?= adjNumber ?>';
+
+    document.getElementById('btn-upload').addEventListener('click', function() {
+      var file  = document.getElementById('ba-file').files[0];
+      var msgEl = document.getElementById('msg');
+      var btn   = document.getElementById('btn-upload');
+      msgEl.className = 'msg';
+
+      if (!file) {
+        msgEl.textContent = 'Pilih file terlebih dahulu.';
+        msgEl.className   = 'msg err';
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        msgEl.textContent = 'File terlalu besar. Maksimal 8 MB.';
+        msgEl.className   = 'msg err';
+        return;
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Mengupload...';
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64 = e.target.result.split(',')[1];
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          body:   JSON.stringify({
+            action:     'uploadBA',
+            adjNumber:  ADJ_NUMBER,
+            attachment: { name: file.name, type: file.type || 'application/octet-stream', data_base64: base64 }
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.success) throw new Error(d.error || 'Upload gagal');
+          msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini dan refresh detail ADJ.';
+          msgEl.className   = 'msg ok';
+          btn.textContent   = 'Selesai ✓';
+        })
+        .catch(function(err) {
+          msgEl.textContent = 'Gagal: ' + (err.message || String(err));
+          msgEl.className   = 'msg err';
+          btn.disabled      = false;
+          btn.textContent   = 'Upload BA';
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>

@@ -78,6 +78,16 @@
     .btn-next { width: 100%; background: #111; color: #fff; border: none; border-radius: 6px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px; letter-spacing: .3px; }
     .btn-next:hover { background: #333; }
 
+    /* Module selection */
+    .choose-module-q { font-size: 14px; color: #555; margin: 12px 0 8px; font-weight: 500; }
+    .module-btns { display: flex; gap: 10px; }
+    .btn-module { flex: 1; border: none; border-radius: 8px; padding: 15px 10px;
+                  font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: .3px; }
+    .btn-module-str { background: #1a73e8; color: #fff; }
+    .btn-module-str:hover { background: #1557b0; }
+    .btn-module-adj { background: #e8711a; color: #fff; }
+    .btn-module-adj:hover { background: #c25c10; }
+
     /* Confirmation modal */
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; }
     .modal-overlay.open { display:flex; }
@@ -115,7 +125,11 @@
           <select id="l-site"></select>
         </div>
         <div id="login-error" class="error-msg" style="display:none"></div>
-        <button type="button" id="btn-next" class="btn-next">Lanjut &#8594;</button>
+        <p class="choose-module-q">Kamu mau ngapain hari ini?</p>
+        <div class="module-btns">
+          <button type="button" id="btn-str" class="btn-module btn-module-str">&#128203; STR Request</button>
+          <button type="button" id="btn-adj" class="btn-module btn-module-adj">&#128221; Adj Request</button>
+        </div>
       </div>
     </div>
 
@@ -178,6 +192,68 @@
       </form>
     </div>
 
+    <!-- ADJ Request form screen -->
+    <div id="screen-adj-form" style="display:none">
+      <h1>Adjustment Request</h1>
+      <div id="adj-site-badge" class="site-badge"></div>
+      <div id="adj-site-badge-sub" class="site-badge-sub"></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Site</label>
+          <input type="text" id="a-site-display" disabled style="background:#f0f4f8;color:#555;">
+        </div>
+        <div class="form-group">
+          <label for="a-dept">Department *</label>
+          <input type="text" id="a-dept" placeholder="Nama department">
+        </div>
+        <div class="form-group">
+          <label for="a-jenis">Jenis Adjustment *</label>
+          <select id="a-jenis">
+            <option value="">-- Pilih --</option>
+            <option value="Article to Article">Article to Article</option>
+            <option value="Adjustment Minus">Adjustment Minus</option>
+            <option value="Adjustment Plus">Adjustment Plus</option>
+            <option value="Create Sales">Create Sales</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="a-ket">Keterangan Adjustment *</label>
+          <select id="a-ket">
+            <option value="">-- Pilih --</option>
+            <option value="Salah Jual">Salah Jual</option>
+            <option value="Salah Jual Rugi">Salah Jual Rugi</option>
+            <option value="Perubahan Article">Perubahan Article</option>
+            <option value="Shipping Mark">Shipping Mark</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="a-attachment">Upload Bukti (Foto / Email) *</label>
+          <input type="file" id="a-attachment" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
+          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 8 MB. Foto atau screenshot email.</span>
+        </div>
+        <div class="form-group">
+          <label>Requested By</label>
+          <input type="text" id="a-reqby" disabled style="background:#f0f4f8;color:#555;">
+        </div>
+      </div>
+      <hr>
+      <div class="table-section">
+        <div class="table-header"><h3 id="adj-items-title">Item List</h3></div>
+        <div class="table-container">
+          <table>
+            <thead id="adj-thead"><tr><td colspan="3" style="padding:8px;color:#888">Pilih Jenis Adjustment dulu.</td></tr></thead>
+            <tbody id="adj-tbody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-add" id="adj-btn-add" data-max="6">+ Tambah Item</button>
+      </div>
+      <div id="adj-error-msg" class="error-msg" style="display:none"></div>
+      <div class="footer">
+        <button type="button" class="btn-back" id="adj-btn-back">Back</button>
+        <button type="button" class="btn-submit" id="adj-btn-submit">Submit ADJ</button>
+      </div>
+    </div>
+
     <!-- Confirmation modal -->
     <div class="modal-overlay" id="confirm-modal">
       <div class="modal-box">
@@ -191,11 +267,11 @@
 
     <div id="screen-success" class="screen" style="display:none">
       <div class="success-box">
-        <p style="font-size:16px;font-weight:600">STR Berhasil Dibuat!</p>
-        <p style="color:#555;font-size:13px;margin-top:6px">Nomor STR kamu:</p>
+        <p id="success-title" style="font-size:16px;font-weight:600">STR Berhasil Dibuat!</p>
+        <p id="success-label" style="color:#555;font-size:13px;margin-top:6px">Nomor STR kamu:</p>
         <div class="str-badge" id="str-number-display"></div>
         <p style="color:#555;font-size:12px">Screenshot atau catat nomor ini untuk tracking.</p>
-        <button class="btn-new" onclick="resetForm()">Buat STR Baru</button>
+        <button id="success-btn" class="btn-new" onclick="resetForm()">Buat STR Baru</button>
       </div>
     </div>
   </div>
@@ -206,7 +282,7 @@
     var rowCount = 0;
 
     function show(id) {
-      ['screen-loading','screen-error','screen-login','screen-form','screen-success'].forEach(function(s) {
+      ['screen-loading','screen-error','screen-login','screen-form','screen-adj-form','screen-success'].forEach(function(s) {
         document.getElementById(s).style.display = (s === id) ? '' : 'none';
       });
     }
@@ -355,6 +431,9 @@
         .then(function(res) { return res.json(); })
         .then(function(result) {
           if (!result.success) throw new Error(result.error || 'Submit gagal');
+          document.getElementById('success-title').textContent = 'STR Berhasil Dibuat!';
+          document.getElementById('success-label').textContent = 'Nomor STR kamu:';
+          document.getElementById('success-btn').textContent   = 'Buat STR Baru';
           document.getElementById('str-number-display').textContent = result.strNumber;
           show('screen-success');
         })
@@ -398,7 +477,8 @@
     document.getElementById('btn-add-item').addEventListener('click', addRow);
     document.getElementById('btn-back').addEventListener('click', function() { show('screen-login'); });
 
-    document.getElementById('btn-next').addEventListener('click', function() {
+    // ── Shared login validation ────────────────────────────────────────────────
+    function validateLogin() {
       var nik   = document.getElementById('l-nik').value.trim();
       var nama  = document.getElementById('l-nama').value.trim();
       var site  = document.getElementById('l-site').value;
@@ -410,28 +490,195 @@
       if (errs.length) {
         errEl.textContent = errs.join(' • ');
         errEl.style.display = 'block';
+        return null;
+      }
+      errEl.style.display = 'none';
+      return { nik: nik, nama: nama, site: site };
+    }
+
+    document.getElementById('btn-str').addEventListener('click', function() {
+      var login = validateLogin();
+      if (!login) return;
+      var lSite     = document.getElementById('l-site');
+      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+      var fSite = document.getElementById('f-site');
+      fSite.value = login.site; fSite.disabled = true;
+      document.getElementById('f-reqby').value = login.nik + ' ' + login.nama;
+      document.getElementById('site-badge').textContent     = siteParts[0];
+      document.getElementById('site-badge-sub').textContent = siteParts[1] || '';
+      if (document.getElementById('item-tbody').rows.length === 0) addRow();
+      show('screen-form');
+    });
+
+    document.getElementById('btn-adj').addEventListener('click', function() {
+      var login = validateLogin();
+      if (!login) return;
+      var lSite     = document.getElementById('l-site');
+      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+      document.getElementById('a-site-display').value = login.site + (siteParts[1] ? ' — ' + siteParts[1] : '');
+      document.getElementById('a-reqby').value         = login.nik + ' ' + login.nama;
+      document.getElementById('adj-site-badge').textContent     = siteParts[0];
+      document.getElementById('adj-site-badge-sub').textContent = siteParts[1] || '';
+      updateAdjTable();
+      show('screen-adj-form');
+    });
+
+    // ── ADJ Form Logic ─────────────────────────────────────────────────────────
+    var _adjRowCount = 0;
+
+    function updateAdjTable() {
+      var jenis   = document.getElementById('a-jenis').value;
+      var isA2A   = jenis === 'Article to Article';
+      var maxRows = isA2A ? 3 : 6;
+      document.getElementById('adj-items-title').textContent = 'Item List (maks ' + maxRows + ')';
+      document.getElementById('adj-btn-add').dataset.max = String(maxRows);
+      document.getElementById('adj-tbody').innerHTML = '';
+      _adjRowCount = 0;
+      document.getElementById('adj-thead').innerHTML = isA2A
+        ? '<tr><th>From Article *</th><th>To Article *</th><th>Qty *</th><th></th></tr>'
+        : '<tr><th>Article *</th><th>Qty *</th><th></th></tr>';
+      addAdjRow();
+    }
+
+    function addAdjRow() {
+      var jenis       = document.getElementById('a-jenis').value;
+      var isA2A       = jenis === 'Article to Article';
+      var maxRows     = parseInt(document.getElementById('adj-btn-add').dataset.max || '6', 10);
+      var currentRows = document.getElementById('adj-tbody').rows.length;
+      if (currentRows >= maxRows) return;
+      _adjRowCount++;
+      var id = _adjRowCount;
+      var tr = document.createElement('tr');
+      tr.dataset.rid = id;
+      tr.innerHTML = isA2A
+        ? '<td><input type="text" class="a-from-art" placeholder="Artikel asal"></td>' +
+          '<td><input type="text" class="a-to-art"   placeholder="Artikel tujuan"></td>' +
+          '<td><input type="number" class="a-qty" min="1" placeholder="0"></td>' +
+          '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>'
+        : '<td><input type="text"   class="a-from-art" placeholder="Kode artikel"></td>' +
+          '<td><input type="number" class="a-qty" min="1" placeholder="0"></td>' +
+          '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>';
+      document.getElementById('adj-tbody').appendChild(tr);
+    }
+
+    function removeAdjRow(id) {
+      var row = document.querySelector('#adj-tbody tr[data-rid="' + id + '"]');
+      if (row) row.remove();
+    }
+
+    function getAdjRows() {
+      var isA2A = document.getElementById('a-jenis').value === 'Article to Article';
+      return Array.from(document.querySelectorAll('#adj-tbody tr')).map(function(row) {
+        if (isA2A) {
+          return {
+            fromArticle: row.querySelector('.a-from-art').value.trim(),
+            toArticle:   row.querySelector('.a-to-art').value.trim(),
+            qty:         parseFloat(row.querySelector('.a-qty').value) || 0
+          };
+        }
+        return {
+          fromArticle: row.querySelector('.a-from-art').value.trim(),
+          toArticle:   '',
+          qty:         parseFloat(row.querySelector('.a-qty').value) || 0
+        };
+      });
+    }
+
+    function validateADJ() {
+      var errs  = [];
+      var jenis = document.getElementById('a-jenis').value;
+      var isA2A = jenis === 'Article to Article';
+      if (!document.getElementById('a-dept').value.trim()) errs.push('Department wajib diisi');
+      if (!jenis)                                           errs.push('Jenis Adjustment wajib dipilih');
+      if (!document.getElementById('a-ket').value)         errs.push('Keterangan Adjustment wajib dipilih');
+      var f = document.getElementById('a-attachment').files;
+      if (!f.length)                errs.push('Upload bukti wajib dilampirkan');
+      else if (f[0].size > 8*1024*1024) errs.push('File terlalu besar (maks 8 MB)');
+      var rows = getAdjRows();
+      if (rows.length === 0) errs.push('Minimal 1 item harus ditambahkan');
+      rows.forEach(function(r, i) {
+        if (!r.fromArticle)           errs.push('Baris ' + (i+1) + ': Article wajib diisi');
+        if (isA2A && !r.toArticle)    errs.push('Baris ' + (i+1) + ': To Article wajib diisi');
+        if (!r.qty || r.qty <= 0)     errs.push('Baris ' + (i+1) + ': Qty wajib > 0');
+      });
+      return errs;
+    }
+
+    function doADJSubmit() {
+      var btn   = document.getElementById('adj-btn-submit');
+      var errEl = document.getElementById('adj-error-msg');
+      btn.disabled = true; btn.textContent = 'Mengupload...';
+      var file   = document.getElementById('a-attachment').files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64    = e.target.result.split(',')[1];
+        var lSite     = document.getElementById('l-site');
+        var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+        var payload   = {
+          adjHeader: {
+            site:        lSite.value,
+            siteName:    siteParts[1] || '',
+            department:  document.getElementById('a-dept').value.trim(),
+            jenis:       document.getElementById('a-jenis').value,
+            keterangan:  document.getElementById('a-ket').value,
+            requestedBy: document.getElementById('a-reqby').value
+          },
+          adjItems:   getAdjRows(),
+          attachment: { name: file.name, type: file.type || 'application/octet-stream', data_base64: base64 }
+        };
+        btn.textContent = 'Menyimpan...';
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+          .then(function(res) { return res.json(); })
+          .then(function(result) {
+            if (!result.success) throw new Error(result.error || 'Submit gagal');
+            document.getElementById('success-title').textContent = 'ADJ Request Berhasil!';
+            document.getElementById('success-label').textContent = 'Nomor ADJ kamu:';
+            document.getElementById('success-btn').textContent   = 'Buat ADJ Baru';
+            document.getElementById('str-number-display').textContent = result.adjNumber;
+            show('screen-success');
+          })
+          .catch(function(err) {
+            errEl.textContent = 'Submit gagal: ' + (err.message || String(err));
+            errEl.style.display = 'block';
+            btn.disabled = false; btn.textContent = 'Submit ADJ';
+          });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('a-jenis').addEventListener('change', function() {
+      if (this.value) updateAdjTable();
+    });
+    document.getElementById('adj-btn-add').addEventListener('click', function() {
+      if (!document.getElementById('a-jenis').value) { alert('Pilih Jenis Adjustment dulu.'); return; }
+      addAdjRow();
+    });
+    document.getElementById('adj-btn-back').addEventListener('click', function() { show('screen-login'); });
+    document.getElementById('adj-btn-submit').addEventListener('click', function() {
+      var errs  = validateADJ();
+      var errEl = document.getElementById('adj-error-msg');
+      if (errs.length) {
+        errEl.textContent = errs.join(' • ');
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
       errEl.style.display = 'none';
-      // Pre-fill form fields (site locked — back to change)
-      var fSite = document.getElementById('f-site');
-      fSite.value    = site;
-      fSite.disabled = true;
-      document.getElementById('f-reqby').value = nik + ' ' + nama;
-      // Show blinking site badge
-      var lSite = document.getElementById('l-site');
-      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
-      document.getElementById('site-badge').textContent     = siteParts[0];
-      document.getElementById('site-badge-sub').textContent = siteParts[1] || '';
-      // Ensure at least one item row exists
-      if (document.getElementById('item-tbody').rows.length === 0) addRow();
-      show('screen-form');
+      doADJSubmit();
     });
 
     function resetForm() {
       document.getElementById('str-form').reset();
       document.getElementById('item-tbody').innerHTML = '';
       rowCount = 0;
+      // Reset ADJ form
+      document.getElementById('a-dept').value       = '';
+      document.getElementById('a-jenis').value      = '';
+      document.getElementById('a-ket').value        = '';
+      document.getElementById('a-attachment').value = '';
+      document.getElementById('adj-thead').innerHTML = '<tr><td colspan="3" style="padding:8px;color:#888">Pilih Jenis Adjustment dulu.</td></tr>';
+      document.getElementById('adj-tbody').innerHTML = '';
+      _adjRowCount = 0;
       loadDropdowns();
     }
 
