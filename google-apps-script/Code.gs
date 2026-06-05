@@ -272,9 +272,8 @@ function submitADJForm(header, items, attachment) {
     fields: {
       'ADJ Number':            adjNumber,
       'Site':                  header.site        || '',
-      'Site Name':             header.siteName    || '',
       'Department':            header.department  || '',
-      'Jenis Adjustment':      header.jenis       || '',
+      'Jenis Adjusment':       header.jenis       || '',   // typo di nama field Lark Base
       'Keterangan Adjustment': header.keterangan  || '',
       'Attachment':            attachmentField,
       'Requested By':          header.requestedBy || '',
