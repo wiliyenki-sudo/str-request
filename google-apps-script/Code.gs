@@ -3,25 +3,47 @@
 var _TOKEN_CACHE_KEY = 'lark_token_cache';
 var _TOKEN_CACHE_TTL = 110 * 60; // 110 menit (token valid 2 jam, sedikit margin)
 
-// getLarkToken — cache token di CacheService supaya tidak fetch ulang tiap request
+// getLarkToken — cache token di CacheService dengan LockService supaya tidak concurrent fetch
+// (concurrent fetch akan saling invalidate token di Lark)
 function getLarkToken() {
   var cache = CacheService.getScriptCache();
   var cached = cache.get(_TOKEN_CACHE_KEY);
   if (cached) return cached;
 
-  var props     = PropertiesService.getScriptProperties();
-  var appId     = props.getProperty('LARK_APP_ID');
-  var appSecret = props.getProperty('LARK_APP_SECRET');
-  var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal', {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ app_id: appId, app_secret: appSecret })
-  });
-  var data = JSON.parse(resp.getContentText());
-  if (data.code !== 0) throw new Error('getLarkToken failed: ' + data.msg);
-  var token = data.tenant_access_token;
-  cache.put(_TOKEN_CACHE_KEY, token, _TOKEN_CACHE_TTL);
-  return token;
+  // Hanya satu execution yang boleh fetch token; sisanya tunggu lalu hit cache
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000); // tunggu maks 10 detik
+  try {
+    // Double-check setelah dapat lock (execution lain mungkin sudah isi cache)
+    cached = cache.get(_TOKEN_CACHE_KEY);
+    if (cached) return cached;
+
+    var props     = PropertiesService.getScriptProperties();
+    var appId     = props.getProperty('LARK_APP_ID');
+    var appSecret = props.getProperty('LARK_APP_SECRET');
+    var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ app_id: appId, app_secret: appSecret })
+    });
+    var data = JSON.parse(resp.getContentText());
+    if (data.code !== 0) throw new Error('getLarkToken failed: ' + data.msg);
+    var token = data.tenant_access_token;
+    // Gunakan expiry dari Lark (biasanya 7200 detik) dikurangi 60 detik margin
+    var ttl = Math.max(60, (data.expire || 7200) - 60);
+    cache.put(_TOKEN_CACHE_KEY, token, ttl);
+    return token;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Utility: reset semua cache (token + dropdowns) — jalankan manual dari GAS editor jika token error
+function clearCaches() {
+  var cache = CacheService.getScriptCache();
+  cache.remove(_TOKEN_CACHE_KEY);
+  cache.remove('dropdowns_v1');
+  Logger.log('Cache cleared.');
 }
 
 function larkApiGet(url, token) {
