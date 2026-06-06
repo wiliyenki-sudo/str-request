@@ -524,7 +524,8 @@ function doGet(e) {
       var pageSize  = parseInt(e.parameter.pageSize || '500');
       var token     = getLarkToken();
       // Fetch tanpa filter API (hindari format issue) — filter di GAS
-      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, { page_size: pageSize });
+      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, { page_size: pageSize, automatic_fields: true });
+      if (resp.code !== 0) throw new Error('Lark search error ' + resp.code + ': ' + resp.msg);
       var items     = (resp.data && resp.data.items) || [];
       // Terapkan filter di GAS
       if (filter && filter.conditions && filter.conditions.length > 0) {
