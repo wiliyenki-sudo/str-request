@@ -46,20 +46,47 @@ function clearCaches() {
   Logger.log('Cache cleared.');
 }
 
+// Lark error code untuk invalid/expired token — trigger auto-refresh
+var _LARK_TOKEN_ERRORS = { 99991663: true, 99991668: true, 99991677: true };
+
+function _larkFetch(opts) {
+  var resp = UrlFetchApp.fetch(opts.url, {
+    method:              opts.method || 'get',
+    headers:             opts.headers,
+    payload:             opts.payload || undefined,
+    muteHttpExceptions:  true
+  });
+  var body = JSON.parse(resp.getContentText());
+  // Kalau Lark return token error, clear cache dan retry SEKALI dengan token baru
+  if (body && _LARK_TOKEN_ERRORS[body.code]) {
+    CacheService.getScriptCache().remove(_TOKEN_CACHE_KEY);
+    var freshToken = getLarkToken();
+    opts.headers['Authorization'] = 'Bearer ' + freshToken;
+    var resp2 = UrlFetchApp.fetch(opts.url, {
+      method:             opts.method || 'get',
+      headers:            opts.headers,
+      payload:            opts.payload || undefined,
+      muteHttpExceptions: true
+    });
+    return JSON.parse(resp2.getContentText());
+  }
+  return body;
+}
+
 function larkApiGet(url, token) {
-  var resp = UrlFetchApp.fetch(url, {
+  return _larkFetch({
+    url:     url,
     headers: { 'Authorization': 'Bearer ' + token }
   });
-  return JSON.parse(resp.getContentText());
 }
 
 function larkApiPost(url, token, payload) {
-  var resp = UrlFetchApp.fetch(url, {
-    method: 'post',
+  return _larkFetch({
+    url:     url,
+    method:  'post',
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
     payload: JSON.stringify(payload)
   });
-  return JSON.parse(resp.getContentText());
 }
 
 function fieldText(val) {
