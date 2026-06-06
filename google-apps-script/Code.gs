@@ -1,7 +1,15 @@
 // ─── Lark API Helpers ────────────────────────────────────────────────────────
 
+var _TOKEN_CACHE_KEY = 'lark_token_cache';
+var _TOKEN_CACHE_TTL = 110 * 60; // 110 menit (token valid 2 jam, sedikit margin)
+
+// getLarkToken — cache token di CacheService supaya tidak fetch ulang tiap request
 function getLarkToken() {
-  var props = PropertiesService.getScriptProperties();
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(_TOKEN_CACHE_KEY);
+  if (cached) return cached;
+
+  var props     = PropertiesService.getScriptProperties();
   var appId     = props.getProperty('LARK_APP_ID');
   var appSecret = props.getProperty('LARK_APP_SECRET');
   var resp = UrlFetchApp.fetch('https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal', {
@@ -11,7 +19,9 @@ function getLarkToken() {
   });
   var data = JSON.parse(resp.getContentText());
   if (data.code !== 0) throw new Error('getLarkToken failed: ' + data.msg);
-  return data.tenant_access_token;
+  var token = data.tenant_access_token;
+  cache.put(_TOKEN_CACHE_KEY, token, _TOKEN_CACHE_TTL);
+  return token;
 }
 
 function larkApiGet(url, token) {
@@ -118,6 +128,14 @@ var ADJ_DETAIL  = 'tblUShPPgJW3fqBn';
 var BASE        = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
 
 function getDropdowns() {
+  // Cache dropdown data 15 menit — Sites/Types/Depts jarang berubah
+  var cache     = CacheService.getScriptCache();
+  var cacheKey  = 'dropdowns_v1';
+  var cached    = cache.get(cacheKey);
+  if (cached) {
+    try { return JSON.parse(cached); } catch(e) {}
+  }
+
   var token = getLarkToken();
 
   // Sites — pakai POST /records/search (konsisten dengan H5 app), page_size 500
@@ -152,7 +170,9 @@ function getDropdowns() {
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
 
-  return { sites: sites, strTypes: strTypes, departments: departments };
+  var result = { sites: sites, strTypes: strTypes, departments: departments };
+  try { cache.put(cacheKey, JSON.stringify(result), 15 * 60); } catch(e) {}
+  return result;
 }
 
 // ─── STR Number Generation ────────────────────────────────────────────────────
