@@ -36,6 +36,7 @@
   <script>
     var SCRIPT_URL = '<?= scriptUrl ?>';
     var ADJ_NUMBER = '<?= adjNumber ?>';
+    var RETURN_URL = '<?= returnUrl ?>';
 
     document.getElementById('btn-upload').addEventListener('click', function() {
       var file  = document.getElementById('ba-file').files[0];
@@ -71,9 +72,21 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (!d.success) throw new Error(d.error || 'Upload gagal');
-          msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini dan refresh detail ADJ.';
-          msgEl.className   = 'msg ok';
-          btn.textContent   = 'Selesai ✓';
+          btn.textContent = 'Selesai ✓';
+          if (RETURN_URL) {
+            var secs = 3;
+            function tick() {
+              msgEl.textContent = '✓ BA berhasil diupload! Kembali ke halaman detail dalam ' + secs + ' detik...';
+              msgEl.className   = 'msg ok';
+              if (secs <= 0) { window.location.href = RETURN_URL; return; }
+              secs--;
+              setTimeout(tick, 1000);
+            }
+            tick();
+          } else {
+            msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini dan refresh detail ADJ.';
+            msgEl.className   = 'msg ok';
+          }
         })
         .catch(function(err) {
           msgEl.textContent = 'Gagal: ' + (err.message || String(err));

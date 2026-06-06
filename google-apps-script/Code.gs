@@ -538,10 +538,12 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (action === 'baUploadForm') {
-      var adjNum = e.parameter.adjNumber || '';
-      var tpl    = HtmlService.createTemplateFromFile('adj-ba-upload');
+      var adjNum    = e.parameter.adjNumber || '';
+      var returnUrl = e.parameter.returnUrl || '';
+      var tpl       = HtmlService.createTemplateFromFile('adj-ba-upload');
       tpl.scriptUrl = ScriptApp.getService().getUrl();
       tpl.adjNumber = adjNum;
+      tpl.returnUrl = returnUrl;
       return tpl.evaluate()
         .setTitle('Upload BA Salju Rugi')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
