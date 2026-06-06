@@ -201,20 +201,84 @@ function generateADJNumber(site) {
   return 'ADJ-' + siteCode + '-' + dateStr + '-' + seq;
 }
 
-// ─── File Upload to Lark Drive (for Lark Base attachment fields) ──────────────
+// ─── Upload Validation ────────────────────────────────────────────────────────
+
+var UPLOAD_ALLOWED_SIGS = {
+  'image/jpeg':      [0xFF, 0xD8, 0xFF],
+  'image/png':       [0x89, 0x50, 0x4E, 0x47],
+  'image/gif':       [0x47, 0x49, 0x46, 0x38],
+  'image/webp':      [0x52, 0x49, 0x46, 0x46],  // RIFF header
+  'image/bmp':       [0x42, 0x4D],
+  'application/pdf': [0x25, 0x50, 0x44, 0x46]   // %PDF
+};
+var UPLOAD_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+
+function sanitizeFileName(name) {
+  if (!name || typeof name !== 'string') return 'attachment';
+  // Buang path traversal + karakter ilegal, pertahankan huruf/angka/spasi/dot/dash/underscore
+  var safe = name.replace(/[^a-zA-Z0-9._\- ]/g, '_').replace(/\.{2,}/g, '_').trim();
+  if (safe.length > 120) safe = safe.substring(0, 120);
+  return safe || 'attachment';
+}
+
+// Validasi base64, ukuran, dan magic bytes. Lempar Error jika gagal.
+// Return { bytes, safeName, safeMime }
+function validateUpload(base64Data, fileName, clientMime) {
+  if (!base64Data || typeof base64Data !== 'string') {
+    throw new Error('Data file tidak valid.');
+  }
+  // Cek format base64 dasar (boleh ada padding =)
+  if (!/^[A-Za-z0-9+/]+=*$/.test(base64Data.replace(/[\r\n]/g, ''))) {
+    throw new Error('Format file tidak valid.');
+  }
+
+  // Decode
+  var bytes;
+  try { bytes = Utilities.base64Decode(base64Data); }
+  catch(e) { throw new Error('Gagal membaca file. Pastikan file tidak rusak.'); }
+
+  if (bytes.length === 0)               throw new Error('File kosong.');
+  if (bytes.length > UPLOAD_MAX_BYTES)  throw new Error('Ukuran file melebihi batas 8 MB.');
+
+  // Sanitasi nama file
+  var safeName = sanitizeFileName(fileName);
+
+  // Deteksi tipe file dari magic bytes (bukan dari client)
+  var detectedMime = null;
+  for (var mime in UPLOAD_ALLOWED_SIGS) {
+    if (!UPLOAD_ALLOWED_SIGS.hasOwnProperty(mime)) continue;
+    var sig = UPLOAD_ALLOWED_SIGS[mime];
+    var ok  = true;
+    for (var i = 0; i < sig.length; i++) {
+      // GAS bytes bisa bertanda negatif (Java signed byte) → normalkan
+      var b = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+      if (b !== sig[i]) { ok = false; break; }
+    }
+    if (ok) { detectedMime = mime; break; }
+  }
+
+  if (!detectedMime) {
+    throw new Error('Tipe file tidak diizinkan. Hanya gambar (JPG/PNG/GIF/WebP/BMP) dan PDF yang diterima.');
+  }
+
+  return { bytes: bytes, safeName: safeName, safeMime: detectedMime };
+}
 
 // ─── Lark Drive Upload — upload file ke Bitable attachment field ─────────────
 // parent_node = app_token Base, extra.bitable = app_token Base
 function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) {
-  var token     = getLarkToken();
-  var fileBytes = Utilities.base64Decode(base64Data);
-  var ct        = mimeType || 'application/octet-stream';
-  var extra     = JSON.stringify({ bitable: appToken || parentNode });
-  var boundary  = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
+  // Validasi & sanitasi sebelum menyentuh API
+  var validated = validateUpload(base64Data, fileName, mimeType);
+  var fileBytes = validated.bytes;
+  var safeName  = validated.safeName;
+  var ct       = validated.safeMime;
+  var token    = getLarkToken();
+  var extra    = JSON.stringify({ bitable: appToken || parentNode });
+  var boundary = 'GASBndry' + Utilities.getUuid().replace(/-/g, '').substring(0, 16);
   var nl = '\r\n';
   var preText =
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="file_name"' + nl + nl + fileName + nl +
+    'Content-Disposition: form-data; name="file_name"' + nl + nl + safeName + nl +
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="parent_type"' + nl + nl + 'bitable_file' + nl +
     '--' + boundary + nl +
@@ -224,7 +288,7 @@ function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) 
     '--' + boundary + nl +
     'Content-Disposition: form-data; name="extra"' + nl + nl + extra + nl +
     '--' + boundary + nl +
-    'Content-Disposition: form-data; name="file"; filename="' + fileName + '"' + nl +
+    'Content-Disposition: form-data; name="file"; filename="' + safeName + '"' + nl +
     'Content-Type: ' + ct + nl + nl;
   var postText = nl + '--' + boundary + '--' + nl;
   var allBytes = Utilities.newBlob(preText).getBytes()
@@ -241,7 +305,8 @@ function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) 
   });
   var result = JSON.parse(resp.getContentText());
   if (result.code !== 0) {
-    throw new Error('uploadFileToLark failed: ' + result.msg + ' | ' + resp.getContentText().slice(0, 200));
+    Logger.log('uploadFileToLark error: code=' + result.code + ' msg=' + result.msg);
+    throw new Error('Upload file gagal. Silakan coba lagi.');
   }
   return result.data.file_token;
 }
@@ -499,8 +564,13 @@ function doPost(e) {
 
     // BA Salju Rugi upload: { action: 'uploadBA', adjNumber, attachment }
     if (body.action === 'uploadBA') {
-      var adjNum  = body.adjNumber || '';
+      var adjNum  = String(body.adjNumber || '').trim();
+      // Validasi format ADJ Number: ADJ-SITE-YYYYMMDD-N (contoh: ADJ-ABCD-20240101-1)
+      if (!/^ADJ-[A-Z0-9]{1,6}-\d{8}-\d+$/.test(adjNum)) {
+        throw new Error('Format ADJ Number tidak valid.');
+      }
       var ba      = body.attachment;
+      if (!ba || !ba.data_base64) throw new Error('File BA tidak ditemukan dalam request.');
       var tok     = getLarkToken();
       var srResp  = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/search', tok, {
         filter: { conjunction: 'and', conditions: [{ field_name: 'ADJ Number', operator: 'is', value: [adjNum] }] },

@@ -634,11 +634,26 @@
       return errs;
     }
 
+    var ALLOWED_UPLOAD_TYPES = ['image/jpeg','image/png','image/gif','image/webp','image/bmp','application/pdf'];
+
     function doADJSubmit() {
       var btn   = document.getElementById('adj-btn-submit');
       var errEl = document.getElementById('adj-error-msg');
+      var file  = document.getElementById('a-attachment').files[0];
+
+      // Client-side validation (GAS juga validasi server-side)
+      if (file) {
+        if (file.size > 8 * 1024 * 1024) {
+          errEl.textContent = 'File terlalu besar. Maksimal 8 MB.';
+          errEl.style.display = 'block'; return;
+        }
+        if (file.type && ALLOWED_UPLOAD_TYPES.indexOf(file.type) === -1) {
+          errEl.textContent = 'Tipe file tidak diizinkan. Hanya gambar (JPG/PNG/GIF/WebP/BMP) dan PDF.';
+          errEl.style.display = 'block'; return;
+        }
+      }
+
       btn.disabled = true; btn.textContent = 'Mengupload...';
-      var file   = document.getElementById('a-attachment').files[0];
       var reader = new FileReader();
       reader.onload = function(e) {
         var base64    = e.target.result.split(',')[1];
