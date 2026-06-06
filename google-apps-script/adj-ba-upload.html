@@ -72,21 +72,25 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (!d.success) throw new Error(d.error || 'Upload gagal');
-          btn.textContent = 'Selesai ✓';
-          if (RETURN_URL) {
-            var secs = 3;
-            function tick() {
-              msgEl.textContent = '✓ BA berhasil diupload! Kembali ke halaman detail dalam ' + secs + ' detik...';
-              msgEl.className   = 'msg ok';
-              if (secs <= 0) { window.location.href = RETURN_URL; return; }
-              secs--;
-              setTimeout(tick, 1000);
+          btn.textContent   = 'Selesai ✓';
+          msgEl.textContent = '✓ BA berhasil diupload! Kembali ke halaman detail...';
+          msgEl.className   = 'msg ok';
+          setTimeout(function() {
+            if (RETURN_URL) {
+              try {
+                // Navigasi tab asal (adj-ico-detail) lalu tutup tab upload ini
+                if (window.opener && !window.opener.closed) {
+                  window.opener.location.href = RETURN_URL;
+                  window.close();
+                  return;
+                }
+              } catch(e) {}
+              // Fallback: navigasi tab ini jika opener tidak tersedia
+              window.location.href = RETURN_URL;
+            } else {
+              msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini.';
             }
-            tick();
-          } else {
-            msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini dan refresh detail ADJ.';
-            msgEl.className   = 'msg ok';
-          }
+          }, 1500);
         })
         .catch(function(err) {
           msgEl.textContent = 'Gagal: ' + (err.message || String(err));
