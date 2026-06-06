@@ -76,7 +76,10 @@
           msgEl.textContent = '✓ BA berhasil diupload! Kembali ke halaman detail...';
           msgEl.className   = 'msg ok';
           setTimeout(function() {
-            if (RETURN_URL) {
+            if (window.parent !== window) {
+              // Dalam iframe → kirim signal ke parent (adj-ico-detail), tidak perlu navigasi
+              window.parent.postMessage({ type: 'BA_UPLOAD_SUCCESS' }, '*');
+            } else if (RETURN_URL) {
               window.location.href = RETURN_URL;
             } else {
               msgEl.textContent = '✓ BA berhasil diupload! Silakan tutup halaman ini.';
