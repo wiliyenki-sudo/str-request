@@ -231,7 +231,7 @@ var UPLOAD_ALLOWED_SIGS = {
   'image/bmp':       [0x42, 0x4D],
   'application/pdf': [0x25, 0x50, 0x44, 0x46]   // %PDF
 };
-var UPLOAD_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+var UPLOAD_MAX_BYTES = 2.5 * 1024 * 1024; // 2.5 MB
 
 function sanitizeFileName(name) {
   if (!name || typeof name !== 'string') return 'attachment';
@@ -258,7 +258,7 @@ function validateUpload(base64Data, fileName, clientMime) {
   catch(e) { throw new Error('Gagal membaca file. Pastikan file tidak rusak.'); }
 
   if (bytes.length === 0)               throw new Error('File kosong.');
-  if (bytes.length > UPLOAD_MAX_BYTES)  throw new Error('Ukuran file melebihi batas 8 MB.');
+  if (bytes.length > UPLOAD_MAX_BYTES)  throw new Error('Ukuran file melebihi batas 2.5 MB.');
 
   // Sanitasi nama file
   var safeName = sanitizeFileName(fileName);
@@ -586,7 +586,7 @@ function doPost(e) {
     if (body.action === 'uploadBA') {
       var adjNum  = String(body.adjNumber || '').trim();
       // Validasi format ADJ Number: ADJ-SITE-YYYYMMDD-N (contoh: ADJ-ABCD-20240101-1)
-      if (!/^ADJ-[A-Z0-9]{1,6}-\d{8}-\d+$/.test(adjNum)) {
+      if (!/^ADJ-[A-Z0-9]{1,6}-\d{6}-\d+$/.test(adjNum)) {
         throw new Error('Format ADJ Number tidak valid.');
       }
       var ba      = body.attachment;

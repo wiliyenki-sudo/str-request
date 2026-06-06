@@ -229,7 +229,7 @@
         <div class="form-group" style="grid-column:1/-1">
           <label for="a-attachment">Upload Bukti (Foto / Email) *</label>
           <input type="file" id="a-attachment" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
-          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 8 MB. Foto atau screenshot email.</span>
+          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB. Foto atau screenshot email.</span>
         </div>
         <div class="form-group">
           <label>Requested By</label>
@@ -643,8 +643,8 @@
 
       // Client-side validation (GAS juga validasi server-side)
       if (file) {
-        if (file.size > 8 * 1024 * 1024) {
-          errEl.textContent = 'File terlalu besar. Maksimal 8 MB.';
+        if (file.size > 2.5 * 1024 * 1024) {
+          errEl.textContent = 'File terlalu besar. Maksimal 2.5 MB.';
           errEl.style.display = 'block'; return;
         }
         if (file.type && ALLOWED_UPLOAD_TYPES.indexOf(file.type) === -1) {
