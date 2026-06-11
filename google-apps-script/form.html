@@ -161,8 +161,8 @@
             <input type="date" id="f-date" required>
           </div>
           <div class="form-group">
-            <label for="f-reqby">Requested By *</label>
-            <input type="text" id="f-reqby" placeholder="Nama - NIP" required>
+            <label for="f-reqby">Requested By</label>
+            <input type="text" id="f-reqby" disabled style="background:#f0f4f8;color:#555;">
           </div>
         </div>
 
@@ -350,6 +350,33 @@
       var reqqty = tr.querySelector('.c-reqqty');
       var reason = tr.querySelector('.c-reason');
 
+      // Article lookup: call GAS, auto-fill description if found
+      art.addEventListener('blur', function() {
+        var code = art.value.trim();
+        if (!code) {
+          desc.value = ''; desc.readOnly = false; desc.style.background = '';
+          art.removeAttribute('data-art-valid'); art.style.borderColor = '';
+          return;
+        }
+        desc.value = 'Mencari...'; desc.readOnly = true; desc.style.background = '#f0f4f8';
+        fetch(SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code))
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res.found) {
+              desc.value = res.description; desc.readOnly = true;
+              desc.style.background = '#f0f4f8';
+              art.style.borderColor = ''; art.setAttribute('data-art-valid', '1');
+            } else {
+              desc.value = ''; desc.readOnly = false; desc.style.background = '';
+              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0');
+            }
+          })
+          .catch(function() {
+            desc.value = ''; desc.readOnly = false; desc.style.background = '';
+            art.removeAttribute('data-art-valid');
+          });
+      });
+
       // Helper: Enter → pindah ke input berikutnya (selectAll untuk number fields)
       function onEnterNav(next, selectAll) {
         return function(e) {
@@ -401,12 +428,17 @@
       if (dateVal) {
         var picked = new Date(dateVal), today = new Date();
         today.setHours(0,0,0,0);
-        if (picked < today) errs.push('Plan Receive Date tidak boleh masa lalu');
+        var minDate = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+        if (picked < minDate) errs.push('Plan Receive Date minimal H+3 dari hari ini');
       }
       var rows = getRows();
       if (rows.length === 0) { errs.push('Minimal 1 item harus ditambahkan'); return errs; }
       if (!rows.some(function(r) { return Number(r.requestQty) > 0; }))
         errs.push('Minimal 1 item dengan Request Qty > 0');
+      document.querySelectorAll('#item-tbody .c-art').forEach(function(inp, i) {
+        if (inp.value.trim() && inp.getAttribute('data-art-valid') === '0')
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
+      });
       return errs;
     }
 
@@ -517,6 +549,12 @@
       document.getElementById('f-reqby').value = login.nik + ' ' + login.nama;
       document.getElementById('site-badge').textContent     = siteParts[0];
       document.getElementById('site-badge-sub').textContent = siteParts[1] || '';
+      // Set min Plan Receive Date = H+3
+      (function() {
+        var d = new Date(); d.setDate(d.getDate() + 3);
+        var m = ('0'+(d.getMonth()+1)).slice(-2), day = ('0'+d.getDate()).slice(-2);
+        document.getElementById('f-date').min = d.getFullYear() + '-' + m + '-' + day;
+      })();
       if (document.getElementById('item-tbody').rows.length === 0) addRow();
       show('screen-form');
     });
@@ -561,6 +599,33 @@
       var fisInp  = tr.querySelector('.a-fis');
       var discInp = tr.querySelector('.a-disc');
       var rcptInp = tr.querySelector('.a-rcpt');
+
+      // Article lookup: call GAS, auto-fill description if found
+      artInp.addEventListener('blur', function() {
+        var code = artInp.value.trim();
+        if (!code) {
+          descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
+          artInp.removeAttribute('data-art-valid'); artInp.style.borderColor = '';
+          return;
+        }
+        descInp.value = 'Mencari...'; descInp.readOnly = true; descInp.style.background = '#f0f4f8';
+        fetch(SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code))
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res.found) {
+              descInp.value = res.description; descInp.readOnly = true;
+              descInp.style.background = '#f0f4f8';
+              artInp.style.borderColor = ''; artInp.setAttribute('data-art-valid', '1');
+            } else {
+              descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
+              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0');
+            }
+          })
+          .catch(function() {
+            descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
+            artInp.removeAttribute('data-art-valid');
+          });
+      });
 
       function calcDisc() {
         var s = parseFloat(sysInp.value) || 0;
@@ -622,8 +687,10 @@
       else if (f[0].size > 8*1024*1024) errs.push('File terlalu besar (maks 8 MB)');
       var rows = getAdjRows();
       if (rows.length === 0) errs.push('Minimal 1 item harus ditambahkan');
-      rows.forEach(function(r, i) {
-        if (!r.article) errs.push('Baris ' + (i+1) + ': Article wajib diisi');
+      document.querySelectorAll('#adj-tbody .a-art').forEach(function(inp, i) {
+        if (!inp.value.trim()) errs.push('Baris ' + (i+1) + ': Article wajib diisi');
+        else if (inp.getAttribute('data-art-valid') === '0')
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
       });
       return errs;
     }
