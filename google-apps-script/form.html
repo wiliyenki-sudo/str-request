@@ -32,6 +32,7 @@
     td input { border: 1px solid #d0d0d0; border-radius: 4px; padding: 6px 8px; font-size: 13px; width: 100%; min-width: 60px; }
     td input:focus { outline: none; border-color: #1a73e8; }
     td input[type="number"] { min-width: 70px; }
+    td input[readonly] { background: #f0f4f8; color: #666; cursor: not-allowed; }
     .td-del { width: 32px; text-align: center; }
     .btn-del { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
     .btn-del:hover { background: #ffe0e0; color: #d00; }
@@ -194,13 +195,11 @@
 
     <!-- ADJ Request form screen -->
     <div id="screen-adj-form" style="display:none">
-      <h1>Adjustment Request</h1>
-      <div id="adj-site-badge" class="site-badge"></div>
-      <div id="adj-site-badge-sub" class="site-badge-sub"></div>
+      <h1>Request New Adjustment</h1>
       <div class="form-grid">
         <div class="form-group">
-          <label>Site</label>
-          <input type="text" id="a-site-display" disabled style="background:#f0f4f8;color:#555;">
+          <label for="a-site">Site *</label>
+          <select id="a-site"><option value="">-- Pilih --</option></select>
         </div>
         <div class="form-group">
           <label for="a-dept">Department *</label>
@@ -226,31 +225,36 @@
             <option value="Shipping Mark">Shipping Mark</option>
           </select>
         </div>
-        <div class="form-group" style="grid-column:1/-1">
-          <label for="a-attachment">Upload Bukti (Foto / Email) *</label>
-          <input type="file" id="a-attachment" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
-          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB. Foto atau screenshot email.</span>
+        <div class="form-group">
+          <label for="a-reqby">Requested By *</label>
+          <input type="text" id="a-reqby" placeholder="Nama - NIP">
         </div>
         <div class="form-group">
-          <label>Requested By</label>
-          <input type="text" id="a-reqby" disabled style="background:#f0f4f8;color:#555;">
+          <label for="a-attachment">Foto Price / Email *</label>
+          <input type="file" id="a-attachment" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
+          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB.</span>
         </div>
       </div>
       <hr>
       <div class="table-section">
-        <div class="table-header"><h3 id="adj-items-title">Item List</h3></div>
+        <div class="table-header"><h3>Item List</h3></div>
         <div class="table-container">
           <table>
-            <thead id="adj-thead"><tr><td colspan="3" style="padding:8px;color:#888">Pilih Jenis Adjustment dulu.</td></tr></thead>
+            <thead id="adj-thead">
+              <tr>
+                <th>Article *</th><th>Description</th><th>System</th>
+                <th>Fisik</th><th>Disc</th><th>Receipt / Email</th><th></th>
+              </tr>
+            </thead>
             <tbody id="adj-tbody"></tbody>
           </table>
         </div>
-        <button type="button" class="btn-add" id="adj-btn-add" data-max="6">+ Tambah Item</button>
+        <button type="button" class="btn-add" id="adj-btn-add">+ Add Item</button>
       </div>
       <div id="adj-error-msg" class="error-msg" style="display:none"></div>
       <div class="footer">
         <button type="button" class="btn-back" id="adj-btn-back">Back</button>
-        <button type="button" class="btn-submit" id="adj-btn-submit">Submit ADJ</button>
+        <button type="button" class="btn-submit" id="adj-btn-submit">Submit Adjustment</button>
       </div>
     </div>
 
@@ -312,6 +316,7 @@
           fillSelect('f-site',   siteOpts);
           fillSelect('f-supply', siteOpts);
           fillSelect('l-site',   siteOpts);
+          fillSelect('a-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
           fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
           fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
@@ -519,13 +524,9 @@
     document.getElementById('btn-adj').addEventListener('click', function() {
       var login = validateLogin();
       if (!login) return;
-      var lSite     = document.getElementById('l-site');
-      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
-      document.getElementById('a-site-display').value = login.site + (siteParts[1] ? ' — ' + siteParts[1] : '');
-      document.getElementById('a-reqby').value         = login.nik + ' ' + login.nama;
-      document.getElementById('adj-site-badge').textContent     = siteParts[0];
-      document.getElementById('adj-site-badge-sub').textContent = siteParts[1] || '';
-      updateAdjTable();
+      document.getElementById('a-site').value  = login.site;
+      document.getElementById('a-reqby').value = login.nik + ' ' + login.nama;
+      if (document.getElementById('adj-tbody').rows.length === 0) updateAdjTable();
       show('screen-adj-form');
     });
 
@@ -533,58 +534,56 @@
     var _adjRowCount = 0;
 
     function updateAdjTable() {
-      var jenis   = document.getElementById('a-jenis').value;
-      var isA2A   = jenis === 'Article to Article';
-      var maxRows = isA2A ? 3 : 6;
-      document.getElementById('adj-items-title').textContent = 'Item List (maks ' + maxRows + ')';
-      document.getElementById('adj-btn-add').dataset.max = String(maxRows);
       document.getElementById('adj-tbody').innerHTML = '';
       _adjRowCount = 0;
-      document.getElementById('adj-thead').innerHTML = isA2A
-        ? '<tr><th>From Article *</th><th>To Article *</th><th>Qty *</th><th></th></tr>'
-        : '<tr><th>Article *</th><th>Qty *</th><th></th></tr>';
       addAdjRow();
     }
 
     function addAdjRow() {
-      var jenis       = document.getElementById('a-jenis').value;
-      var isA2A       = jenis === 'Article to Article';
-      var maxRows     = parseInt(document.getElementById('adj-btn-add').dataset.max || '6', 10);
-      var currentRows = document.getElementById('adj-tbody').rows.length;
-      if (currentRows >= maxRows) return;
+      if (document.getElementById('adj-tbody').rows.length >= 20) return;
       _adjRowCount++;
       var id = _adjRowCount;
       var tr = document.createElement('tr');
       tr.dataset.rid = id;
-      tr.innerHTML = isA2A
-        ? '<td><input type="text" class="a-from-art" placeholder="Artikel asal"></td>' +
-          '<td><input type="text" class="a-to-art"   placeholder="Artikel tujuan"></td>' +
-          '<td><input type="number" class="a-qty" min="1" placeholder="0"></td>' +
-          '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>'
-        : '<td><input type="text"   class="a-from-art" placeholder="Kode artikel"></td>' +
-          '<td><input type="number" class="a-qty" min="1" placeholder="0"></td>' +
-          '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>';
+      tr.innerHTML =
+        '<td><input type="text"   class="a-art"  placeholder="Kode artikel"></td>' +
+        '<td><input type="text"   class="a-desc" placeholder="Deskripsi"></td>' +
+        '<td><input type="number" class="a-sys"  min="0" step="0.01" placeholder="0"></td>' +
+        '<td><input type="number" class="a-fis"  min="0" step="0.01" placeholder="0"></td>' +
+        '<td><input type="number" class="a-disc" readonly tabindex="-1" placeholder="0"></td>' +
+        '<td><input type="text"   class="a-rcpt" placeholder="No. receipt / email"></td>' +
+        '<td class="td-del"><button type="button" class="btn-del" onclick="removeAdjRow(' + id + ')">&#x2715;</button></td>';
       document.getElementById('adj-tbody').appendChild(tr);
 
-      // ── Enter key navigation per baris ────────────────────────────────────────
-      var inp1 = tr.querySelector('.a-from-art');
-      var inpQ = tr.querySelector('.a-qty');
-      function adjEnter(from, to, selectAll) {
+      var artInp  = tr.querySelector('.a-art');
+      var descInp = tr.querySelector('.a-desc');
+      var sysInp  = tr.querySelector('.a-sys');
+      var fisInp  = tr.querySelector('.a-fis');
+      var discInp = tr.querySelector('.a-disc');
+      var rcptInp = tr.querySelector('.a-rcpt');
+
+      function calcDisc() {
+        var s = parseFloat(sysInp.value) || 0;
+        var f = parseFloat(fisInp.value) || 0;
+        var d = f - s;
+        discInp.value = d === 0 ? '' : d % 1 === 0 ? String(d) : d.toFixed(2);
+      }
+      sysInp.addEventListener('input', calcDisc);
+      fisInp.addEventListener('input', calcDisc);
+
+      function adjEnter(from, to) {
         from.addEventListener('keydown', function(e) {
           if (e.key !== 'Enter') return;
           e.preventDefault();
           to.focus();
-          if (selectAll) to.select();
+          if (to.type === 'number') to.select();
         });
       }
-      if (isA2A) {
-        var inp2 = tr.querySelector('.a-to-art');
-        adjEnter(inp1, inp2, false);  // From Article → To Article
-        adjEnter(inp2, inpQ, true);   // To Article → Qty (select all)
-      } else {
-        adjEnter(inp1, inpQ, true);   // Article → Qty (select all)
-      }
-      inpQ.addEventListener('keydown', function(e) {  // Qty → tombol Tambah Item
+      adjEnter(artInp,  descInp);
+      adjEnter(descInp, sysInp);
+      adjEnter(sysInp,  fisInp);
+      adjEnter(fisInp,  rcptInp);
+      rcptInp.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         document.getElementById('adj-btn-add').focus();
@@ -597,39 +596,34 @@
     }
 
     function getAdjRows() {
-      var isA2A = document.getElementById('a-jenis').value === 'Article to Article';
       return Array.from(document.querySelectorAll('#adj-tbody tr')).map(function(row) {
-        if (isA2A) {
-          return {
-            fromArticle: row.querySelector('.a-from-art').value.trim(),
-            toArticle:   row.querySelector('.a-to-art').value.trim(),
-            qty:         parseFloat(row.querySelector('.a-qty').value) || 0
-          };
-        }
+        var sys = parseFloat(row.querySelector('.a-sys').value) || 0;
+        var fis = parseFloat(row.querySelector('.a-fis').value) || 0;
         return {
-          fromArticle: row.querySelector('.a-from-art').value.trim(),
-          toArticle:   '',
-          qty:         parseFloat(row.querySelector('.a-qty').value) || 0
+          article:      row.querySelector('.a-art').value.trim(),
+          description:  row.querySelector('.a-desc').value.trim(),
+          system:       sys,
+          fisik:        fis,
+          disc:         fis - sys,
+          receiptEmail: row.querySelector('.a-rcpt').value.trim()
         };
       });
     }
 
     function validateADJ() {
-      var errs  = [];
-      var jenis = document.getElementById('a-jenis').value;
-      var isA2A = jenis === 'Article to Article';
-      if (!document.getElementById('a-dept').value) errs.push('Department wajib diisi');
-      if (!jenis)                                           errs.push('Jenis Adjustment wajib dipilih');
-      if (!document.getElementById('a-ket').value)         errs.push('Keterangan Adjustment wajib dipilih');
+      var errs = [];
+      if (!document.getElementById('a-site').value)          errs.push('Site wajib dipilih');
+      if (!document.getElementById('a-dept').value)          errs.push('Department wajib diisi');
+      if (!document.getElementById('a-jenis').value)         errs.push('Jenis Adjustment wajib dipilih');
+      if (!document.getElementById('a-ket').value)           errs.push('Keterangan Adjustment wajib dipilih');
+      if (!document.getElementById('a-reqby').value.trim())  errs.push('Requested By wajib diisi');
       var f = document.getElementById('a-attachment').files;
-      if (!f.length)                errs.push('Upload bukti wajib dilampirkan');
+      if (!f.length)                    errs.push('Upload bukti wajib dilampirkan');
       else if (f[0].size > 8*1024*1024) errs.push('File terlalu besar (maks 8 MB)');
       var rows = getAdjRows();
       if (rows.length === 0) errs.push('Minimal 1 item harus ditambahkan');
       rows.forEach(function(r, i) {
-        if (!r.fromArticle)           errs.push('Baris ' + (i+1) + ': Article wajib diisi');
-        if (isA2A && !r.toArticle)    errs.push('Baris ' + (i+1) + ': To Article wajib diisi');
-        if (!r.qty || r.qty <= 0)     errs.push('Baris ' + (i+1) + ': Qty wajib > 0');
+        if (!r.article) errs.push('Baris ' + (i+1) + ': Article wajib diisi');
       });
       return errs;
     }
@@ -657,16 +651,16 @@
       var reader = new FileReader();
       reader.onload = function(e) {
         var base64    = e.target.result.split(',')[1];
-        var lSite     = document.getElementById('l-site');
-        var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+        var aSite     = document.getElementById('a-site');
+        var siteParts = aSite.options[aSite.selectedIndex] ? aSite.options[aSite.selectedIndex].text.split(' — ') : ['', ''];
         var payload   = {
           adjHeader: {
-            site:        lSite.value,
+            site:        aSite.value,
             siteName:    siteParts[1] || '',
             department:  document.getElementById('a-dept').value.trim(),
             jenis:       document.getElementById('a-jenis').value,
             keterangan:  document.getElementById('a-ket').value,
-            requestedBy: document.getElementById('a-reqby').value
+            requestedBy: document.getElementById('a-reqby').value.trim()
           },
           adjItems:   getAdjRows(),
           attachment: { name: file.name, type: file.type || 'application/octet-stream', data_base64: base64 }
@@ -693,16 +687,11 @@
       reader.readAsDataURL(file);
     }
 
-    document.getElementById('a-jenis').addEventListener('change', function() {
-      if (this.value) updateAdjTable();
-    });
     document.getElementById('adj-btn-add').addEventListener('click', function() {
-      if (!document.getElementById('a-jenis').value) { alert('Pilih Jenis Adjustment dulu.'); return; }
       addAdjRow();
-      // Setelah tambah baris (via klik atau Enter) → fokus ke From Article baris paling bawah
       var rows = document.getElementById('adj-tbody').rows;
       if (rows.length > 0) {
-        var first = rows[rows.length - 1].querySelector('.a-from-art');
+        var first = rows[rows.length - 1].querySelector('.a-art');
         if (first) setTimeout(function() { first.focus(); }, 0);
       }
     });
@@ -728,11 +717,12 @@
       document.getElementById('item-tbody').innerHTML = '';
       rowCount = 0;
       // Reset ADJ form
-      document.getElementById('a-dept').value       = '';
-      document.getElementById('a-jenis').value      = '';
-      document.getElementById('a-ket').value        = '';
-      document.getElementById('a-attachment').value = '';
-      document.getElementById('adj-thead').innerHTML = '<tr><td colspan="3" style="padding:8px;color:#888">Pilih Jenis Adjustment dulu.</td></tr>';
+      document.getElementById('a-site').value        = '';
+      document.getElementById('a-dept').value        = '';
+      document.getElementById('a-jenis').value       = '';
+      document.getElementById('a-ket').value         = '';
+      document.getElementById('a-reqby').value       = '';
+      document.getElementById('a-attachment').value  = '';
       document.getElementById('adj-tbody').innerHTML = '';
       _adjRowCount = 0;
       loadDropdowns();

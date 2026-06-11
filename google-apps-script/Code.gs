@@ -427,13 +427,17 @@ function submitADJForm(header, items, attachment) {
 
   for (var i = 0; i < items.length; i++) {
     var item       = items[i];
-    Logger.log('submitADJForm: detail baris ' + (i+1) + ' from=' + item.fromArticle + ' to=' + item.toArticle + ' qty=' + item.qty);
+    Logger.log('submitADJForm: detail baris ' + (i+1) + ' article=' + item.article + ' sys=' + item.system + ' fis=' + item.fisik);
     var detailResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
       fields: {
-        'ADJ Number':   adjNumber,
-        'From Article': item.fromArticle || '',
-        'To Article':   item.toArticle   || '',
-        'Qty':          parseFloat(item.qty) || 0
+        'ADJ Number':    adjNumber,
+        'Row Sequence':  i + 1,
+        'Article':       item.article      || '',
+        'Description':   item.description  || '',
+        'System Qty':    parseFloat(item.system) || 0,
+        'Fisik Qty':     parseFloat(item.fisik)  || 0,
+        'Disc':          parseFloat(item.disc)   || 0,
+        'Receipt Email': item.receiptEmail || ''
       }
     });
     Logger.log('submitADJForm: detail resp baris ' + (i+1) + ' = ' + JSON.stringify(detailResp));
