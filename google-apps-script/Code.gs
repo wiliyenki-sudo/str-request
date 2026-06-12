@@ -175,9 +175,7 @@ var STR_DETAIL  = 'tbluAki3HiMe1ppg';
 var ADJ_HEADER         = 'tblFGno3ONx4BseJ';
 var ADJ_DETAIL         = 'tblUShPPgJW3fqBn';
 var BASE               = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
-var ARTICLE_SHEET_TOKEN = 'KrKpscE19hyDuUtFTFol1B6hg6f';
-var SHEETS_V2_BASE     = 'https://open.larksuite.com/open-apis/sheets/v2/spreadsheets/';
-var SHEETS_V3_BASE     = 'https://open.larksuite.com/open-apis/sheets/v3/spreadsheets/';
+var ARTICLE_GSHEET_ID  = '1OtUbXfM7CAAghfRkk3oe16xoqF1FuM8rwPkZybUB_dQ';
 var ART_CHUNK_PREFIX   = 'artm_';
 var ART_META_KEY       = 'artm_meta';
 
@@ -229,49 +227,37 @@ function getDropdowns() {
   return result;
 }
 
-// ─── Article Lookup from Lark Sheet ──────────────────────────────────────────
+// ─── Article Lookup from Google Sheets ───────────────────────────────────────
 
 function buildArticleMap_() {
-  var token = getLarkToken();
+  var ss     = SpreadsheetApp.openById(ARTICLE_GSHEET_ID);
+  var sheet  = ss.getSheets()[0];
+  var data   = sheet.getDataRange().getValues();
+  if (!data.length) throw new Error('Master Article sheet kosong');
 
-  // Get first sheet metadata (sheetId + row count)
-  var metaResp = larkApiGet(SHEETS_V3_BASE + ARTICLE_SHEET_TOKEN + '/sheets', token);
-  var sheets   = (metaResp.data && metaResp.data.sheets) || [];
-  if (!sheets.length) throw new Error('Article sheet not found');
-  var sheetId  = sheets[0].sheet_id;
-  var maxRow   = (sheets[0].grid_properties && sheets[0].grid_properties.row_count) || 200000;
-
-  // Read header to find Article & Description column indices
-  var hdrResp  = larkApiGet(SHEETS_V2_BASE + ARTICLE_SHEET_TOKEN + '/values/' + encodeURIComponent(sheetId + '!A1:Z1'), token);
-  var hdrVals  = (hdrResp.data && hdrResp.data.valueRange && hdrResp.data.valueRange.values) || [[]];
-  var headers  = hdrVals[0] || [];
+  // Detect column positions from header row
+  var header = data[0];
   var artCol = -1, descCol = -1, statusCol = -1;
-  headers.forEach(function(h, i) {
+  header.forEach(function(h, i) {
     var hn = String(h || '').toLowerCase().trim();
     if (hn === 'article')     artCol    = i;
     if (hn === 'description') descCol   = i;
     if (hn === 'status')      statusCol = i;
   });
-  if (artCol < 0 || descCol < 0) throw new Error('Article/Description columns not found. Headers: ' + headers.join(','));
+  if (artCol < 0 || descCol < 0)
+    throw new Error('Kolom Article/Description tidak ditemukan. Header: ' + header.join(','));
 
-  // Read data in batches of 5000 rows, build {code → desc} map
+  // Build {code(lowercase) → description} map, filter Active only
   var map = {};
-  var batchSize = 5000;
-  for (var row = 2; row <= maxRow; row += batchSize) {
-    var endRow = row + batchSize - 1;
-    var range  = sheetId + '!A' + row + ':Z' + endRow;
-    var vResp  = larkApiGet(SHEETS_V2_BASE + ARTICLE_SHEET_TOKEN + '/values/' + encodeURIComponent(range), token);
-    var values = (vResp.data && vResp.data.valueRange && vResp.data.valueRange.values) || [];
-    if (!values.length) break;
-    values.forEach(function(r) {
-      var code   = String(r[artCol]    != null ? r[artCol]    : '').trim();
-      var desc   = String(r[descCol]   != null ? r[descCol]   : '').trim();
-      var status = statusCol >= 0 ? String(r[statusCol] != null ? r[statusCol] : '').trim().toLowerCase() : 'active';
-      if (code && (!status || status === 'active')) map[code.toLowerCase()] = desc;
-    });
+  for (var i = 1; i < data.length; i++) {
+    var row    = data[i];
+    var code   = String(row[artCol]  != null ? row[artCol]  : '').trim();
+    var desc   = String(row[descCol] != null ? row[descCol] : '').trim();
+    var status = statusCol >= 0 ? String(row[statusCol] != null ? row[statusCol] : '').trim().toLowerCase() : 'active';
+    if (code && (!status || status === 'active')) map[code.toLowerCase()] = desc;
   }
 
-  // Store map in CacheService split into 90 KB chunks
+  // Cache in CacheService split into 90 KB chunks (support 70k+ entries)
   var mapStr    = JSON.stringify(map);
   var chunkSize = 90000;
   var numChunks = Math.ceil(mapStr.length / chunkSize);
