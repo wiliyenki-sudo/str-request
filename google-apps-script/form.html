@@ -617,11 +617,13 @@
               descInp.style.background = '#f0f4f8';
               artInp.style.borderColor = ''; artInp.setAttribute('data-art-valid', '1');
             } else {
+              if (res.error) console.warn('[lookupArticle] GAS error:', res.error);
               descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
               artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0');
             }
           })
-          .catch(function() {
+          .catch(function(err) {
+            console.warn('[lookupArticle] fetch error:', err);
             descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
             artInp.removeAttribute('data-art-valid');
           });

@@ -235,26 +235,25 @@ function buildArticleMap_() {
   var data   = sheet.getDataRange().getValues();
   if (!data.length) throw new Error('Master Article sheet kosong');
 
-  // Detect column positions from header row
+  // Detect column positions from header row (partial match untuk toleransi typo)
   var header = data[0];
-  var artCol = -1, descCol = -1, statusCol = -1;
+  var artCol = -1, descCol = -1;
   header.forEach(function(h, i) {
     var hn = String(h || '').toLowerCase().trim();
-    if (hn === 'article')     artCol    = i;
-    if (hn === 'description') descCol   = i;
-    if (hn === 'status')      statusCol = i;
+    if (artCol  < 0 && hn.indexOf('article') !== -1) artCol  = i;
+    if (descCol < 0 && hn.indexOf('desc')    !== -1) descCol = i;
   });
-  if (artCol < 0 || descCol < 0)
-    throw new Error('Kolom Article/Description tidak ditemukan. Header: ' + header.join(','));
+  // Fallback: kolom pertama = Article, kedua = Description
+  if (artCol  < 0) artCol  = 0;
+  if (descCol < 0) descCol = 1;
 
-  // Build {code(lowercase) → description} map, filter Active only
+  // Build {code(lowercase) → description} map — semua status di-include
   var map = {};
   for (var i = 1; i < data.length; i++) {
-    var row    = data[i];
-    var code   = String(row[artCol]  != null ? row[artCol]  : '').trim();
-    var desc   = String(row[descCol] != null ? row[descCol] : '').trim();
-    var status = statusCol >= 0 ? String(row[statusCol] != null ? row[statusCol] : '').trim().toLowerCase() : 'active';
-    if (code && (!status || status === 'active')) map[code.toLowerCase()] = desc;
+    var row  = data[i];
+    var code = String(row[artCol]  != null ? row[artCol]  : '').trim();
+    var desc = String(row[descCol] != null ? row[descCol] : '').trim();
+    if (code) map[code.toLowerCase()] = desc;
   }
 
   // Cache in CacheService split into 90 KB chunks (support 70k+ entries)
@@ -293,11 +292,15 @@ function getArticleMap_() {
 
 function lookupArticle(code) {
   if (!code) return { found: false };
-  var map = getArticleMap_();
-  var key = String(code).toLowerCase().trim();
-  return map.hasOwnProperty(key)
-    ? { found: true, description: map[key] }
-    : { found: false };
+  try {
+    var map = getArticleMap_();
+    var key = String(code).toLowerCase().trim();
+    return map.hasOwnProperty(key)
+      ? { found: true, description: map[key] }
+      : { found: false, mapSize: Object.keys(map).length };
+  } catch(e) {
+    return { found: false, error: e.message };
+  }
 }
 
 // ─── STR Number Generation ────────────────────────────────────────────────────
