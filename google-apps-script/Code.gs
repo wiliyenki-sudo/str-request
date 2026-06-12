@@ -676,6 +676,37 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify(artResult))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    if (action === 'debugArticle') {
+      try {
+        var ss      = SpreadsheetApp.openById(ARTICLE_GSHEET_ID);
+        var sh      = ss.getSheets()[0];
+        var lastRow = sh.getLastRow();
+        var lastCol = sh.getLastColumn();
+        var sample  = sh.getRange(1, 1, Math.min(4, lastRow), lastCol).getValues();
+        var cache   = CacheService.getScriptCache();
+        return ContentService.createTextOutput(JSON.stringify({
+          sheetName:   sh.getName(),
+          lastRow:     lastRow,
+          lastCol:     lastCol,
+          sampleRows:  sample,
+          cacheStatus: cache.get(ART_META_KEY) ? 'ada (' + cache.get(ART_META_KEY) + ' chunks)' : 'kosong'
+        })).setMimeType(ContentService.MimeType.JSON);
+      } catch(ex) {
+        return ContentService.createTextOutput(JSON.stringify({ error: ex.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    if (action === 'clearArticleCache') {
+      var cache = CacheService.getScriptCache();
+      var meta  = cache.get(ART_META_KEY);
+      if (meta) {
+        var keys = [ART_META_KEY];
+        for (var ci = 0; ci < parseInt(meta, 10); ci++) keys.push(ART_CHUNK_PREFIX + ci);
+        cache.removeAll(keys);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: 'cleared' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'baUploadForm') {
       var adjNum    = e.parameter.adjNumber || '';
       var returnUrl = e.parameter.returnUrl || '';
