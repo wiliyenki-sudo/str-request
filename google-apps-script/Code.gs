@@ -290,6 +290,12 @@ function getArticleMap_() {
   return buildArticleMap_();
 }
 
+function warmArticleCache() {
+  // Jalankan manual dari GAS editor untuk trigger authorization + build cache
+  var map = buildArticleMap_();
+  Logger.log('Article cache built: ' + Object.keys(map).length + ' entries');
+}
+
 function lookupArticle(code) {
   if (!code) return { found: false };
   try {
