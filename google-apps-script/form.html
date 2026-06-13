@@ -36,6 +36,13 @@
     .td-del { width: 32px; text-align: center; }
     .btn-del { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
     .btn-del:hover { background: #ffe0e0; color: #d00; }
+    /* Column widths — table scrolls horizontal jika melebihi lebar layar */
+    th.col-art  { width: 110px; min-width: 100px; }
+    th.col-desc { width: 260px; min-width: 200px; }
+    th.col-num  { width: 72px;  min-width: 65px; }
+    th.col-rsn  { width: 150px; min-width: 120px; }
+    th.col-rcpt { width: 160px; min-width: 130px; }
+    th.col-del  { width: 32px; }
 
     .btn-add { margin-top: 10px; background: none; border: 1px dashed #999; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: #555; }
     .btn-add:hover { border-color: #333; color: #333; }
@@ -174,8 +181,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>Article</th><th>Description</th><th>Stock Qty</th>
-                  <th>Sales Qty</th><th>Request Qty *</th><th>Reason</th><th></th>
+                  <th class="col-art">Article</th><th class="col-desc">Description</th><th class="col-num">Stock Qty</th>
+                  <th class="col-num">Sales Qty</th><th class="col-num">Request Qty *</th><th class="col-rsn">Reason</th><th class="col-del"></th>
                 </tr>
               </thead>
               <tbody id="item-tbody"></tbody>
@@ -242,8 +249,8 @@
           <table>
             <thead id="adj-thead">
               <tr>
-                <th>Article *</th><th>Description</th><th>System</th>
-                <th>Fisik</th><th>Disc</th><th>Receipt / Email</th><th></th>
+                <th class="col-art">Article *</th><th class="col-desc">Description</th><th class="col-num">System</th>
+                <th class="col-num">Fisik</th><th class="col-num">Disc</th><th class="col-rcpt">Receipt / Email</th><th class="col-del"></th>
               </tr>
             </thead>
             <tbody id="adj-tbody"></tbody>
