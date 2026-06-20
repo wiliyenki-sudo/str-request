@@ -209,6 +209,10 @@
           <select id="a-site"><option value="">-- Pilih --</option></select>
         </div>
         <div class="form-group">
+          <label for="a-supply">Supplying Site</label>
+          <select id="a-supply"><option value="">-- Pilih --</option></select>
+        </div>
+        <div class="form-group">
           <label for="a-dept">Department *</label>
           <select id="a-dept"><option value="">-- Pilih --</option></select>
         </div>
@@ -320,10 +324,14 @@
           }).map(function(s) {
             return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
           });
-          fillSelect('f-site',   siteOpts);
-          fillSelect('f-supply', siteOpts);
-          fillSelect('l-site',   siteOpts);
-          fillSelect('a-site',   siteOpts);
+          var supplyOpts = (data.supplySites || []).map(function(s) {
+            return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
+          });
+          fillSelect('f-site',    siteOpts);
+          fillSelect('f-supply',  supplyOpts);
+          fillSelect('l-site',    siteOpts);
+          fillSelect('a-site',    siteOpts);
+          fillSelect('a-supply',  supplyOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
           fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
           fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
@@ -731,12 +739,13 @@
         var siteParts = aSite.options[aSite.selectedIndex] ? aSite.options[aSite.selectedIndex].text.split(' — ') : ['', ''];
         var payload   = {
           adjHeader: {
-            site:        aSite.value,
-            siteName:    siteParts[1] || '',
-            department:  document.getElementById('a-dept').value.trim(),
-            jenis:       document.getElementById('a-jenis').value,
-            keterangan:  document.getElementById('a-ket').value,
-            requestedBy: document.getElementById('a-reqby').value.trim()
+            site:          aSite.value,
+            siteName:      siteParts[1] || '',
+            supplyingSite: document.getElementById('a-supply').value,
+            department:    document.getElementById('a-dept').value.trim(),
+            jenis:         document.getElementById('a-jenis').value,
+            keterangan:    document.getElementById('a-ket').value,
+            requestedBy:   document.getElementById('a-reqby').value.trim()
           },
           adjItems:   getAdjRows(),
           attachment: { name: file.name, type: file.type || 'application/octet-stream', data_base64: base64 }
@@ -794,6 +803,7 @@
       rowCount = 0;
       // Reset ADJ form
       document.getElementById('a-site').value        = '';
+      document.getElementById('a-supply').value      = '';
       document.getElementById('a-dept').value        = '';
       document.getElementById('a-jenis').value       = '';
       document.getElementById('a-ket').value         = '';

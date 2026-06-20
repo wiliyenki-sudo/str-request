@@ -182,7 +182,7 @@ var ART_META_KEY       = 'artm_meta';
 function getDropdowns() {
   // Cache dropdown data 15 menit — Sites/Types/Depts jarang berubah
   var cache     = CacheService.getScriptCache();
-  var cacheKey  = 'dropdowns_v3';
+  var cacheKey  = 'dropdowns_v4';
   var cached    = cache.get(cacheKey);
   if (cached) {
     try { return JSON.parse(cached); } catch(e) {}
@@ -201,6 +201,9 @@ function getDropdowns() {
     var name = fieldText(r.fields['STORE Name']);
     return { code: code, name: name };
   }).filter(function(s) { return !!s.code; });
+
+  // Supplying Sites — kolom J (index 9) dan K (index 10) dari Google Sheet master article
+  var supplySites = getSupplySitesFromGSheet_();
 
   // STR Types — pakai POST /records/search
   var typesResp = larkApiPost(
@@ -222,9 +225,34 @@ function getDropdowns() {
     return fieldText(r.fields[keys[0]]);
   }).filter(Boolean);
 
-  var result = { sites: sites, strTypes: strTypes, departments: departments };
+  var result = { sites: sites, supplySites: supplySites, strTypes: strTypes, departments: departments };
   try { cache.put(cacheKey, JSON.stringify(result), 15 * 60); } catch(e) {}
   return result;
+}
+
+// Baca Supplying Site dari kolom J (index 9) dan K (index 10) Google Sheet master article
+// Deduplikasi berdasarkan kode, abaikan baris kosong
+function getSupplySitesFromGSheet_() {
+  try {
+    var ss    = SpreadsheetApp.openById(ARTICLE_GSHEET_ID);
+    var sheet = ss.getSheets()[0];
+    var data  = sheet.getDataRange().getValues();
+    if (data.length < 2) return [];
+    var seen   = {};
+    var result = [];
+    for (var i = 1; i < data.length; i++) {
+      var code = String(data[i][9] != null ? data[i][9] : '').trim();
+      var name = String(data[i][10] != null ? data[i][10] : '').trim();
+      if (code && !seen[code]) {
+        seen[code] = true;
+        result.push({ code: code, name: name });
+      }
+    }
+    return result;
+  } catch(e) {
+    Logger.log('getSupplySitesFromGSheet_ error: ' + e.message);
+    return [];
+  }
 }
 
 // ─── Article Lookup from Google Sheets ───────────────────────────────────────
@@ -495,12 +523,13 @@ function submitADJForm(header, items, attachment) {
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records', token, {
     fields: {
       'ADJ Number':            adjNumber,
-      'Site':                  header.site        || '',
-      'Department':            header.department  || '',
-      'Jenis Adjusment':       header.jenis       || '',   // typo di nama field Lark Base
-      'Keterangan Adjustment': header.keterangan  || '',
+      'Site':                  header.site          || '',
+      'Supplying Site':        header.supplyingSite || '',
+      'Department':            header.department    || '',
+      'Jenis Adjusment':       header.jenis         || '',   // typo di nama field Lark Base
+      'Keterangan Adjustment': header.keterangan    || '',
       'Attachment':            attachmentField,
-      'Requested By':          header.requestedBy || '',
+      'Requested By':          header.requestedBy   || '',
       'Submit Date':           Date.now(),
       'Status':                'Waiting Create by ICO'
     }
