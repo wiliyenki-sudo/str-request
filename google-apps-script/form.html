@@ -203,14 +203,12 @@
     <!-- ADJ Request form screen -->
     <div id="screen-adj-form" style="display:none">
       <h1>Request New Adjustment</h1>
+      <div id="adj-site-badge" class="site-badge"></div>
+      <div id="adj-site-badge-sub" class="site-badge-sub"></div>
       <div class="form-grid">
         <div class="form-group">
           <label for="a-site">Site *</label>
           <select id="a-site"><option value="">-- Pilih --</option></select>
-        </div>
-        <div class="form-group">
-          <label for="a-supply">Supplying Site</label>
-          <select id="a-supply"><option value="">-- Pilih --</option></select>
         </div>
         <div class="form-group">
           <label for="a-dept">Department *</label>
@@ -327,11 +325,10 @@
           var supplyOpts = (data.supplySites || []).map(function(s) {
             return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
           });
-          fillSelect('f-site',    siteOpts);
-          fillSelect('f-supply',  supplyOpts);
-          fillSelect('l-site',    siteOpts);
-          fillSelect('a-site',    siteOpts);
-          fillSelect('a-supply',  supplyOpts);
+          fillSelect('f-site',   siteOpts);
+          fillSelect('f-supply', supplyOpts);
+          fillSelect('l-site',   siteOpts);
+          fillSelect('a-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
           fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
           fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
@@ -577,8 +574,13 @@
     document.getElementById('btn-adj').addEventListener('click', function() {
       var login = validateLogin();
       if (!login) return;
-      document.getElementById('a-site').value  = login.site;
+      var lSite     = document.getElementById('l-site');
+      var siteParts = lSite.options[lSite.selectedIndex].text.split(' — ');
+      var aSite = document.getElementById('a-site');
+      aSite.value = login.site; aSite.disabled = true;
       document.getElementById('a-reqby').value = login.nik + ' ' + login.nama;
+      document.getElementById('adj-site-badge').textContent     = siteParts[0];
+      document.getElementById('adj-site-badge-sub').textContent = siteParts[1] || '';
       if (document.getElementById('adj-tbody').rows.length === 0) updateAdjTable();
       show('screen-adj-form');
     });
@@ -739,10 +741,9 @@
         var siteParts = aSite.options[aSite.selectedIndex] ? aSite.options[aSite.selectedIndex].text.split(' — ') : ['', ''];
         var payload   = {
           adjHeader: {
-            site:          aSite.value,
-            siteName:      siteParts[1] || '',
-            supplyingSite: document.getElementById('a-supply').value,
-            department:    document.getElementById('a-dept').value.trim(),
+            site:        aSite.value,
+            siteName:    siteParts[1] || '',
+            department:  document.getElementById('a-dept').value.trim(),
             jenis:         document.getElementById('a-jenis').value,
             keterangan:    document.getElementById('a-ket').value,
             requestedBy:   document.getElementById('a-reqby').value.trim()
@@ -802,8 +803,9 @@
       document.getElementById('item-tbody').innerHTML = '';
       rowCount = 0;
       // Reset ADJ form
-      document.getElementById('a-site').value        = '';
-      document.getElementById('a-supply').value      = '';
+      var aS = document.getElementById('a-site'); aS.value = ''; aS.disabled = false;
+      document.getElementById('adj-site-badge').textContent     = '';
+      document.getElementById('adj-site-badge-sub').textContent = '';
       document.getElementById('a-dept').value        = '';
       document.getElementById('a-jenis').value       = '';
       document.getElementById('a-ket').value         = '';

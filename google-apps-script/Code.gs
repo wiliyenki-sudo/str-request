@@ -523,10 +523,9 @@ function submitADJForm(header, items, attachment) {
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records', token, {
     fields: {
       'ADJ Number':            adjNumber,
-      'Site':                  header.site          || '',
-      'Supplying Site':        header.supplyingSite || '',
-      'Department':            header.department    || '',
-      'Jenis Adjusment':       header.jenis         || '',   // typo di nama field Lark Base
+      'Site':                  header.site        || '',
+      'Department':            header.department  || '',
+      'Jenis Adjusment':       header.jenis       || '',   // typo di nama field Lark Base
       'Keterangan Adjustment': header.keterangan    || '',
       'Attachment':            attachmentField,
       'Requested By':          header.requestedBy   || '',
