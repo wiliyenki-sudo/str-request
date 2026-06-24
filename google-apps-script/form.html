@@ -362,30 +362,34 @@
       var reqqty = tr.querySelector('.c-reqqty');
       var reason = tr.querySelector('.c-reason');
 
-      // Article lookup: call GAS, auto-fill description if found
+      // Article lookup: call GAS, auto-fill description if found, filter by department
       art.addEventListener('blur', function() {
         var code = art.value.trim();
         if (!code) {
           desc.value = ''; desc.readOnly = false; desc.style.background = '';
-          art.removeAttribute('data-art-valid'); art.style.borderColor = '';
+          art.removeAttribute('data-art-valid'); art.removeAttribute('data-art-err'); art.style.borderColor = '';
           return;
         }
+        var dept = document.getElementById('f-dept').value;
         desc.value = 'Mencari...'; desc.readOnly = true; desc.style.background = '#f0f4f8';
-        fetch(SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code))
+        var url = SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code) + (dept ? '&dept=' + encodeURIComponent(dept) : '');
+        fetch(url)
           .then(function(r) { return r.json(); })
           .then(function(res) {
-            if (res.found) {
-              desc.value = res.description; desc.readOnly = true;
-              desc.style.background = '#f0f4f8';
-              art.style.borderColor = ''; art.setAttribute('data-art-valid', '1');
+            if (res.found && !res.wrongDept) {
+              desc.value = res.description; desc.readOnly = true; desc.style.background = '#f0f4f8';
+              art.style.borderColor = ''; art.setAttribute('data-art-valid', '1'); art.removeAttribute('data-art-err');
+            } else if (res.wrongDept) {
+              desc.value = ''; desc.readOnly = false; desc.style.background = '';
+              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0'); art.setAttribute('data-art-err', 'wrongdept');
             } else {
               desc.value = ''; desc.readOnly = false; desc.style.background = '';
-              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0');
+              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0'); art.setAttribute('data-art-err', 'notfound');
             }
           })
           .catch(function() {
             desc.value = ''; desc.readOnly = false; desc.style.background = '';
-            art.removeAttribute('data-art-valid');
+            art.removeAttribute('data-art-valid'); art.removeAttribute('data-art-err');
           });
       });
 
@@ -448,8 +452,15 @@
       if (!rows.some(function(r) { return Number(r.requestQty) > 0; }))
         errs.push('Minimal 1 item dengan Request Qty > 0');
       document.querySelectorAll('#item-tbody .c-art').forEach(function(inp, i) {
-        if (inp.value.trim() && inp.getAttribute('data-art-valid') === '0')
+        if (!inp.value.trim()) return;
+        var v = inp.getAttribute('data-art-valid');
+        var e = inp.getAttribute('data-art-err');
+        if (v === '0' && e === 'wrongdept')
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" bukan dari department ini');
+        else if (v === '0')
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
+        else if (!v)
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" belum divalidasi — tab keluar dari kolom artikel');
       });
       return errs;
     }
@@ -531,6 +542,28 @@
 
     document.getElementById('btn-add-item').addEventListener('click', addRow);
     document.getElementById('btn-back').addEventListener('click', function() { show('screen-login'); });
+
+    // Saat department STR berubah — invalidate semua validasi artikel yg sudah ada
+    document.getElementById('f-dept').addEventListener('change', function() {
+      document.querySelectorAll('#item-tbody .c-art').forEach(function(inp) {
+        if (!inp.value.trim()) return;
+        inp.removeAttribute('data-art-valid'); inp.removeAttribute('data-art-err');
+        inp.style.borderColor = '#f57c00';
+        var desc = inp.closest('tr').querySelector('.c-desc');
+        desc.value = ''; desc.readOnly = false; desc.style.background = '';
+      });
+    });
+
+    // Saat department ADJ berubah — invalidate semua validasi artikel yg sudah ada
+    document.getElementById('a-dept').addEventListener('change', function() {
+      document.querySelectorAll('#adj-tbody .a-art').forEach(function(inp) {
+        if (!inp.value.trim()) return;
+        inp.removeAttribute('data-art-valid'); inp.removeAttribute('data-art-err');
+        inp.style.borderColor = '#f57c00';
+        var desc = inp.closest('tr').querySelector('.a-desc');
+        desc.value = ''; desc.readOnly = false; desc.style.background = '';
+      });
+    });
 
     // ── Shared login validation ────────────────────────────────────────────────
     function validateLogin() {
@@ -617,32 +650,37 @@
       var discInp = tr.querySelector('.a-disc');
       var rcptInp = tr.querySelector('.a-rcpt');
 
-      // Article lookup: call GAS, auto-fill description if found
+      // Article lookup: call GAS, auto-fill description if found, filter by department
       artInp.addEventListener('blur', function() {
         var code = artInp.value.trim();
         if (!code) {
           descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
-          artInp.removeAttribute('data-art-valid'); artInp.style.borderColor = '';
+          artInp.removeAttribute('data-art-valid'); artInp.removeAttribute('data-art-err'); artInp.style.borderColor = '';
           return;
         }
+        var dept = document.getElementById('a-dept').value;
         descInp.value = 'Mencari...'; descInp.readOnly = true; descInp.style.background = '#f0f4f8';
-        fetch(SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code))
+        var url = SCRIPT_URL + '?action=lookupArticle&code=' + encodeURIComponent(code) + (dept ? '&dept=' + encodeURIComponent(dept) : '');
+        fetch(url)
           .then(function(r) { return r.json(); })
           .then(function(res) {
-            if (res.found) {
-              descInp.value = res.description; descInp.readOnly = true;
-              descInp.style.background = '#f0f4f8';
-              artInp.style.borderColor = ''; artInp.setAttribute('data-art-valid', '1');
+            if (res.found && !res.wrongDept) {
+              descInp.value = res.description; descInp.readOnly = true; descInp.style.background = '#f0f4f8';
+              artInp.style.borderColor = ''; artInp.setAttribute('data-art-valid', '1'); artInp.removeAttribute('data-art-err');
+            } else if (res.wrongDept) {
+              if (res.error) console.warn('[lookupArticle] GAS error:', res.error);
+              descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
+              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0'); artInp.setAttribute('data-art-err', 'wrongdept');
             } else {
               if (res.error) console.warn('[lookupArticle] GAS error:', res.error);
               descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
-              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0');
+              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0'); artInp.setAttribute('data-art-err', 'notfound');
             }
           })
           .catch(function(err) {
             console.warn('[lookupArticle] fetch error:', err);
             descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
-            artInp.removeAttribute('data-art-valid');
+            artInp.removeAttribute('data-art-valid'); artInp.removeAttribute('data-art-err');
           });
       });
 
@@ -707,9 +745,15 @@
       var rows = getAdjRows();
       if (rows.length === 0) errs.push('Minimal 1 item harus ditambahkan');
       document.querySelectorAll('#adj-tbody .a-art').forEach(function(inp, i) {
-        if (!inp.value.trim()) errs.push('Baris ' + (i+1) + ': Article wajib diisi');
-        else if (inp.getAttribute('data-art-valid') === '0')
+        if (!inp.value.trim()) { errs.push('Baris ' + (i+1) + ': Article wajib diisi'); return; }
+        var v = inp.getAttribute('data-art-valid');
+        var e = inp.getAttribute('data-art-err');
+        if (v === '0' && e === 'wrongdept')
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" bukan dari department ini');
+        else if (v === '0')
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
+        else if (!v)
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" belum divalidasi — tab keluar dari kolom artikel');
       });
       return errs;
     }

@@ -42,7 +42,7 @@ function getLarkToken() {
 function clearCaches() {
   var cache = CacheService.getScriptCache();
   cache.remove(_TOKEN_CACHE_KEY);
-  cache.remove('dropdowns_v3');
+  cache.remove('dropdowns_v4');
   Logger.log('Cache cleared.');
 }
 
@@ -176,8 +176,8 @@ var ADJ_HEADER         = 'tblFGno3ONx4BseJ';
 var ADJ_DETAIL         = 'tblUShPPgJW3fqBn';
 var BASE               = 'https://open.larksuite.com/open-apis/bitable/v1/apps/';
 var ARTICLE_GSHEET_ID  = '1OtUbXfM7CAAghfRkk3oe16xoqF1FuM8rwPkZybUB_dQ';
-var ART_CHUNK_PREFIX   = 'artm_';
-var ART_META_KEY       = 'artm_meta';
+var ART_CHUNK_PREFIX   = 'artd_';
+var ART_META_KEY       = 'artd_meta';
 
 function getDropdowns() {
   // Cache dropdown data 15 menit — Sites/Types/Depts jarang berubah
@@ -275,13 +275,16 @@ function buildArticleMap_() {
   if (artCol  < 0) artCol  = 0;
   if (descCol < 0) descCol = 1;
 
-  // Build {code(lowercase) → description} map — semua status di-include
+  // Build {code(lowercase) → {desc, dept}} map — semua status di-include
+  // Kolom C (index 2) = department code
+  var DEPT_COL = 2;
   var map = {};
   for (var i = 1; i < data.length; i++) {
     var row  = data[i];
-    var code = String(row[artCol]  != null ? row[artCol]  : '').trim();
-    var desc = String(row[descCol] != null ? row[descCol] : '').trim();
-    if (code) map[code.toLowerCase()] = desc;
+    var code = String(row[artCol]   != null ? row[artCol]   : '').trim();
+    var desc = String(row[descCol]  != null ? row[descCol]  : '').trim();
+    var dept = String(row[DEPT_COL] != null ? row[DEPT_COL] : '').trim();
+    if (code) map[code.toLowerCase()] = { desc: desc, dept: dept };
   }
 
   // Cache in CacheService split into 90 KB chunks (support 70k+ entries)
@@ -324,14 +327,20 @@ function warmArticleCache() {
   Logger.log('Article cache built: ' + Object.keys(map).length + ' entries');
 }
 
-function lookupArticle(code) {
+function lookupArticle(code, dept) {
   if (!code) return { found: false };
   try {
-    var map = getArticleMap_();
-    var key = String(code).toLowerCase().trim();
-    return map.hasOwnProperty(key)
-      ? { found: true, description: map[key] }
-      : { found: false, mapSize: Object.keys(map).length };
+    var map   = getArticleMap_();
+    var key   = String(code).toLowerCase().trim();
+    if (!map.hasOwnProperty(key)) return { found: false, mapSize: Object.keys(map).length };
+    var entry    = map[key];
+    var desc     = entry.desc || '';
+    var artDept  = entry.dept || '';
+    // Validasi dept hanya jika keduanya diisi
+    if (dept && artDept && artDept.toLowerCase() !== String(dept).toLowerCase().trim()) {
+      return { found: true, wrongDept: true, articleDept: artDept };
+    }
+    return { found: true, description: desc, dept: artDept };
   } catch(e) {
     return { found: false, error: e.message };
   }
@@ -706,7 +715,8 @@ function doGet(e) {
     }
     if (action === 'lookupArticle') {
       var artCode = e.parameter.code || '';
-      var artResult = lookupArticle(artCode);
+      var artDept = e.parameter.dept || '';
+      var artResult = lookupArticle(artCode, artDept);
       return ContentService.createTextOutput(JSON.stringify(artResult))
         .setMimeType(ContentService.MimeType.JSON);
     }
