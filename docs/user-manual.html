@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>User Manual — STR &amp; ADJ Request System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#1a202c;background:#f8fafc;line-height:1.6}
+a{color:#1a6fe8;text-decoration:none}
+.cover{background:linear-gradient(135deg,#1565c0,#1a6fe8);color:#fff;padding:64px 24px 52px;text-align:center}
+.cover h1{font-size:2.6em;font-weight:800;margin-bottom:6px}
+.cover h2{font-size:1.15em;font-weight:400;opacity:.85;margin-bottom:24px}
+.cover .ver{font-size:.82em;opacity:.7;background:rgba(255,255,255,.18);display:inline-block;padding:4px 16px;border-radius:20px}
+.container{max-width:920px;margin:0 auto;padding:36px 24px 60px}
+.toc{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px 28px;margin:36px 0}
+.toc h2{font-size:1em;color:#4a5568;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
+.toc ol{padding-left:20px}
+.toc li{margin:6px 0;font-size:.93em}
+.toc a{color:#1a6fe8}
+.section{margin:56px 0}
+.section>h2{font-size:1.35em;color:#1565c0;border-bottom:2px solid #e2e8f0;padding-bottom:10px;margin-bottom:22px}
+h3{font-size:1.05em;color:#2d3748;margin:22px 0 10px}
+p{font-size:.93em;color:#4a5568;margin-bottom:12px}
+ul,ol.content-list{font-size:.93em;color:#4a5568;padding-left:22px;margin-bottom:12px}
+li{margin:4px 0}
+/* ── Phone frame ── */
+.screen-wrap{display:flex;flex-wrap:wrap;gap:28px;margin:20px 0;align-items:flex-start}
+.screen-block{flex-shrink:0}
+.phone{width:196px;border:2.5px solid #2d3748;border-radius:28px;overflow:hidden;background:#f8fafc;box-shadow:0 10px 32px rgba(0,0,0,.18)}
+.phone-bar{background:#1a6fe8;color:#fff;font-size:8.5px;padding:5px 14px;display:flex;justify-content:space-between;letter-spacing:.02em}
+.app-hdr{background:#1a6fe8;color:#fff;padding:10px 12px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:8px;min-height:38px}
+.back-ico{font-size:16px;line-height:1;cursor:pointer}
+.screen-body{padding:10px 11px;background:#f8fafc;min-height:350px}
+.lbl{font-size:9px;color:#718096;margin-bottom:2px;font-weight:600;letter-spacing:.02em}
+.inp{border:1px solid #cbd5e0;border-radius:6px;padding:6px 8px;font-size:10.5px;width:100%;margin-bottom:8px;color:#2d3748;background:#fff;display:block}
+.inp.ro{background:#f0f4f8;color:#666}
+.inp.err{border-color:#e53935;background:#fff5f5}
+.site-badge{background:#1a6fe8;color:#fff;font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:4px;display:inline-block;letter-spacing:.04em}
+.site-sub{font-size:8.5px;color:#718096;margin-top:2px;margin-bottom:8px}
+.divider{border:none;border-top:1px solid #e2e8f0;margin:8px 0}
+.sec-title{font-size:9px;font-weight:800;color:#1a6fe8;margin:6px 0 5px;text-transform:uppercase;letter-spacing:.06em}
+.btn{width:100%;border:none;border-radius:8px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;margin-top:5px;display:block}
+.btn-p{background:#1a6fe8;color:#fff}
+.btn-d{background:#e53935;color:#fff}
+.btn-o{background:#fff;color:#1a6fe8;border:1.5px solid #1a6fe8}
+.btn-g{background:#2e7d32;color:#fff}
+.btn-sm{padding:5px 9px;font-size:9.5px;border-radius:6px;border:none;font-weight:700;cursor:pointer;width:auto;display:inline-block}
+.row-table{width:100%;border-collapse:collapse;font-size:8px;margin:4px 0}
+.row-table th{background:#edf2f7;padding:3px 4px;text-align:left;font-weight:700;color:#4a5568}
+.row-table td{padding:3px 4px;border-bottom:1px solid #f0f4f8;color:#2d3748}
+.info-row{display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px;gap:4px}
+.info-l{color:#718096;flex-shrink:0}
+.info-v{font-weight:500;color:#2d3748;text-align:right;word-break:break-all}
+.bold-v{font-weight:800;color:#1565c0}
+.badge{font-size:8.5px;padding:2px 7px;border-radius:10px;display:inline-block;font-weight:700}
+.b-wait{background:#fff3e0;color:#e65100}
+.b-ice{background:#e3f2fd;color:#1565c0}
+.b-done{background:#e8f5e9;color:#2e7d32}
+.b-rej{background:#fce4ec;color:#c62828}
+.b-adj{background:#f3e5f5;color:#6a1b9a}
+.b-adj-ico{background:#e8eaf6;color:#283593}
+.toast-ok{background:#2e7d32;color:#fff;font-size:9.5px;padding:7px 10px;border-radius:7px;text-align:center;margin-top:8px}
+.toast-err{background:#c62828;color:#fff;font-size:9.5px;padding:7px 10px;border-radius:7px;text-align:center;margin-top:8px}
+.err-msg{color:#e53935;font-size:8.5px;margin-top:-6px;margin-bottom:6px}
+.warn-msg{color:#e65100;font-size:8.5px;margin-top:-6px;margin-bottom:6px;background:#fff8e1;padding:3px 6px;border-radius:4px}
+.card-item{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;margin-bottom:7px;background:#fff}
+.caption{font-size:11px;color:#718096;font-style:italic;text-align:center;margin-top:8px;max-width:200px}
+.callout{background:#e3f2fd;border-left:4px solid #1a6fe8;padding:14px 16px;border-radius:0 10px 10px 0;font-size:.875em;color:#1a237e;flex:1;min-width:200px}
+.callout h4{margin-bottom:6px;font-size:.95em;font-weight:700}
+.callout.warn{background:#fff8e1;border-color:#f57c00;color:#7f4f00}
+.callout.tip{background:#f3e5f5;border-color:#9c27b0;color:#4a148c}
+.callout.ok{background:#e8f5e9;border-color:#2e7d32;color:#1b5e20}
+.flow-box{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin:14px 0}
+.flow-step{background:#e3f2fd;color:#1565c0;font-size:.83em;font-weight:700;padding:7px 14px;border-radius:20px}
+.flow-arr{color:#90a4ae;font-size:1.3em}
+.format-table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.88em}
+.format-table th,.format-table td{border:1px solid #e2e8f0;padding:8px 12px;text-align:left}
+.format-table th{background:#f0f4f8;font-weight:700}
+.format-table tr:nth-child(even) td{background:#fafafa}
+.number-eg{background:#1565c0;color:#fff;font-family:'Courier New',monospace;font-size:1.05em;padding:9px 22px;border-radius:8px;display:inline-block;letter-spacing:.06em;margin:10px 0}
+.csv-preview{background:#1e2a3a;color:#a8e6cf;font-family:'Courier New',monospace;font-size:.78em;padding:16px;border-radius:8px;margin:12px 0;overflow-x:auto;white-space:pre;line-height:1.5}
+.row-num{background:#f0f4f8;color:#718096;font-size:8.5px;padding:2px 4px;border-radius:3px;font-family:monospace}
+.inline-badge{display:inline-block;vertical-align:middle}
+/* print */
+@media print{.cover{-webkit-print-color-adjust:exact;print-color-adjust:exact}.phone{break-inside:avoid}.section{break-before:auto}}
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>User Manual</h1>
+  <h2>STR &amp; ADJ Request System</h2>
+  <p style="opacity:.8;font-size:.95em;margin-bottom:20px">Panduan Lengkap Penggunaan Aplikasi via Lark</p>
+  <span class="ver">Versi 1.0 &nbsp;|&nbsp; Juni 2026</span>
+</div>
+<div class="container">
+<div class="toc">
+  <h2>Daftar Isi</h2>
+  <ol>
+    <li><a href="#s1">Pendahuluan &amp; Alur Proses</a></li>
+    <li><a href="#s2">Login</a></li>
+    <li><a href="#s3">Menu Utama</a></li>
+    <li><a href="#s4">Form STR (Stock Transfer Request)</a></li>
+    <li><a href="#s5">Form ADJ (Adjustment)</a></li>
+    <li><a href="#s6">Proses Approval STR</a></li>
+    <li><a href="#s7">ICO Processing — STR</a></li>
+    <li><a href="#s8">ICO Processing — ADJ</a></li>
+    <li><a href="#app-a">Lampiran A: Format Nomor Pengajuan</a></li>
+    <li><a href="#app-b">Lampiran B: Format CSV SAP</a></li>
+  </ol>
+</div>
+<!-- SECTION 1 -->
+<div class="section" id="s1">
+  <h2>1. Pendahuluan &amp; Alur Proses</h2>
+  <p>Aplikasi <strong>STR &amp; ADJ Request</strong> dijalankan di dalam platform <strong>Lark</strong> sebagai H5 mini-app. Digunakan oleh tim site untuk mengajukan permintaan Stock Transfer Request (STR) dan Adjustment (ADJ) secara digital, lengkap dengan workflow approval dan ekspor CSV ke SAP.</p>
+  <h3>Alur Proses STR</h3>
+  <div class="flow-box">
+    <span class="flow-step">Site Buat STR</span><span class="flow-arr">→</span>
+    <span class="flow-step">Approval Manager</span><span class="flow-arr">→</span>
+    <span class="flow-step">ICO Processing</span><span class="flow-arr">→</span>
+    <span class="flow-step">Download CSV</span><span class="flow-arr">→</span>
+    <span class="flow-step">Done / SAP</span>
+  </div>
+  <h3>Alur Proses ADJ</h3>
+  <div class="flow-box">
+    <span class="flow-step">Site Buat ADJ</span><span class="flow-arr">→</span>
+    <span class="flow-step">ICO Processing</span><span class="flow-arr">→</span>
+    <span class="flow-step">Download CSV</span><span class="flow-arr">→</span>
+    <span class="flow-step">Done / SAP</span>
+  </div>
+  <div class="callout" style="margin-top:16px"><h4>ℹ️ Catatan</h4>ADJ tidak melalui tahap Approval — langsung diproses oleh ICO setelah disubmit.</div>
+  <h3>Role Pengguna</h3>
+  <table class="format-table">
+    <tr><th>Role</th><th>Akses</th><th>Layar yang Digunakan</th></tr>
+    <tr><td><strong>Requestor</strong> (Site)</td><td>Buat STR &amp; ADJ</td><td>Form STR, Form ADJ</td></tr>
+    <tr><td><strong>Approver</strong> (Dept Head / Manager)</td><td>Approve atau Reject STR</td><td>STR List, STR Approval Detail</td></tr>
+    <tr><td><strong>ICO</strong></td><td>Proses STR/ADJ, download CSV</td><td>ICO STR Detail, ICO ADJ Detail</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section" id="s2">
+  <h2>2. Login</h2>
+  <p>Buka aplikasi <strong>STR &amp; ADJ Request</strong> di Lark. Layar pertama yang muncul adalah form login.</p>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="app-hdr">STR &amp; ADJ Request</div>
+        <div class="screen-body">
+          <div style="text-align:center;padding:14px 0 10px">
+            <div style="font-size:28px;margin-bottom:4px">📦</div>
+            <div style="font-size:13px;font-weight:800;color:#1565c0">STR &amp; ADJ System</div>
+            <div style="font-size:9px;color:#718096;margin-top:2px">Stock Management</div>
+          </div>
+          <hr class="divider">
+          <div class="lbl">NIK *</div>
+          <input class="inp" value="110202" readonly>
+          <div class="lbl">Nama *</div>
+          <input class="inp" value="Budi Santoso" readonly>
+          <div class="lbl">Site *</div>
+          <input class="inp" value="J724 — Jakarta Selatan ▾" readonly>
+          <button class="btn btn-p" style="margin-top:10px">LOGIN</button>
+        </div>
+      </div>
+      <p class="caption">Gbr 2.1 — Layar Login</p>
+    </div>
+    <div>
+      <div class="callout">
+        <h4>📝 Cara Login</h4>
+        <ol class="content-list" style="margin-top:8px">
+          <li>Isi <strong>NIK</strong> (Nomor Induk Karyawan)</li>
+          <li>Isi <strong>Nama</strong> lengkap Anda</li>
+          <li>Pilih <strong>Site</strong> lokasi kerja Anda dari dropdown</li>
+          <li>Tekan tombol <strong>LOGIN</strong></li>
+        </ol>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <h4>⚠️ Perhatian</h4>
+        NIK dan Nama akan tercatat sebagai <em>Requested By</em> di setiap pengajuan. Pastikan data diisi dengan benar.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section" id="s3">
+  <h2>3. Menu Utama</h2>
+  <p>Setelah login berhasil, tampil layar menu utama. Site badge akan berkedip sebentar untuk mengkonfirmasi site yang dipilih.</p>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="app-hdr">STR &amp; ADJ Request</div>
+        <div class="screen-body">
+          <div style="padding:10px 0 6px;text-align:center">
+            <div style="font-size:10px;color:#718096;margin-bottom:4px">Selamat datang,</div>
+            <div style="font-size:13px;font-weight:800;color:#2d3748;margin-bottom:8px">Budi Santoso</div>
+            <div class="site-badge" style="animation:none">J724</div>
+            <div class="site-sub">Jakarta Selatan</div>
+          </div>
+          <hr class="divider">
+          <div class="sec-title">Pengajuan Baru</div>
+          <button class="btn btn-p" style="margin-bottom:7px">📋&nbsp; Buat STR Request</button>
+          <button class="btn btn-p" style="background:#6a1b9a">📋&nbsp; Buat ADJ Request</button>
+          <hr class="divider" style="margin-top:10px">
+          <div class="sec-title">Riwayat &amp; Proses</div>
+          <button class="btn btn-o" style="margin-bottom:7px">📄&nbsp; Lihat STR Saya</button>
+          <button class="btn btn-o" style="color:#6a1b9a;border-color:#6a1b9a">📄&nbsp; Lihat ADJ Saya</button>
+        </div>
+      </div>
+      <p class="caption">Gbr 3.1 — Menu Utama setelah login</p>
+    </div>
+    <div class="callout">
+      <h4>🧭 Navigasi</h4>
+      <ul style="margin-top:8px">
+        <li><strong>Buat STR Request</strong> — Buka form pengajuan STR baru</li>
+        <li><strong>Buat ADJ Request</strong> — Buka form pengajuan ADJ baru</li>
+        <li><strong>Lihat STR Saya</strong> — Lihat histori dan status STR yang pernah diajukan</li>
+        <li><strong>Lihat ADJ Saya</strong> — Lihat histori dan status ADJ</li>
+      </ul>
+      <p style="margin-top:10px;font-size:.85em;color:#555">Badge site (<strong>J724</strong>) muncul di pojok atas form untuk mengingatkan site aktif selama sesi.</p>
+    </div>
+  </div>
+</div>
+<!-- SECTION 4 -->
+<div class="section" id="s4">
+  <h2>4. Form STR (Stock Transfer Request)</h2>
+  <p>STR digunakan untuk meminta transfer stok dari Supplying Site (gudang/DC lain) ke site Anda.</p>
+
+  <h3>4.1 Mengisi Form STR</h3>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:43</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> Form STR</div>
+        <div class="screen-body">
+          <div class="site-badge">J724</div>
+          <div class="site-sub">Jakarta Selatan</div>
+          <div class="lbl">Department *</div>
+          <input class="inp" value="RUANG TAMU &amp; PENYIMPANAN ▾" readonly>
+          <div class="lbl">Supplying Site *</div>
+          <input class="inp" value="J001 — Gudang Pusat ▾" readonly>
+          <div class="lbl">Kode Vendor</div>
+          <input class="inp ro" value="VND-10012" readonly>
+          <div class="lbl">Plan Receive Date *</div>
+          <input class="inp" value="01/07/2026" readonly>
+          <hr class="divider">
+          <div class="sec-title">Item List (2 baris)</div>
+          <table class="row-table">
+            <tr><th>#</th><th>Article</th><th>Deskripsi</th><th>Reason</th></tr>
+            <tr><td>1</td><td>1001234</td><td>Meja Kerja...</td><td>Rusak</td></tr>
+            <tr><td>2</td><td>1001890</td><td>Kursi Lipat...</td><td>Habis</td></tr>
+          </table>
+          <button class="btn-sm btn-o" style="margin-top:5px;width:100%">+ Tambah Baris</button>
+          <button class="btn btn-p" style="margin-top:8px">SUBMIT STR</button>
+        </div>
+      </div>
+      <p class="caption">Gbr 4.1 — Form STR terisi</p>
+    </div>
+    <div>
+      <table class="format-table">
+        <tr><th>Field</th><th>Keterangan</th></tr>
+        <tr><td><strong>Department</strong></td><td>Departemen pengaju. Digunakan untuk memfilter artikel master.</td></tr>
+        <tr><td><strong>Supplying Site</strong></td><td>Pilih sumber pengiriman stok (DC/gudang asal).</td></tr>
+        <tr><td><strong>Kode Vendor</strong></td><td>Terisi otomatis sesuai Supplying Site. Read-only.</td></tr>
+        <tr><td><strong>Plan Receive Date</strong></td><td>Tanggal rencana terima barang.</td></tr>
+        <tr><td><strong>Article</strong></td><td>Kode artikel SAP. Divalidasi otomatis saat cursor keluar dari field.</td></tr>
+        <tr><td><strong>Deskripsi</strong></td><td>Terisi otomatis setelah artikel valid.</td></tr>
+        <tr><td><strong>Reason</strong></td><td>Alasan permintaan (teks bebas).</td></tr>
+      </table>
+      <div class="callout ok" style="margin-top:12px">
+        <h4>✅ Kode Vendor Otomatis</h4>
+        Saat Supplying Site dipilih, field <em>Kode Vendor</em> langsung terisi dari mapping master — tidak perlu diisi manual.
+      </div>
+    </div>
+  </div>
+
+  <h3>4.2 Validasi Article</h3>
+  <p>Saat kursor meninggalkan field Article, sistem otomatis mengecek kode ke master artikel dan memverifikasi department.</p>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:44</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> Form STR</div>
+        <div class="screen-body">
+          <div class="sec-title" style="margin-top:4px">Item List</div>
+          <table class="row-table" style="margin-bottom:6px">
+            <tr><th>#</th><th>Article</th><th>Deskripsi</th></tr>
+            <tr>
+              <td>1</td>
+              <td><span style="color:#2e7d32;font-weight:700">1001234 ✓</span></td>
+              <td><span style="color:#555">Meja Kerja Lipat</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><span style="color:#e53935;font-weight:700">9999999 ✗</span></td>
+              <td><span style="color:#e53935;font-style:italic">Tidak ditemukan</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><span style="color:#e65100;font-weight:700">2005500 ⚠</span></td>
+              <td><span style="color:#e65100;font-style:italic">Bukan dept ini</span></td>
+            </tr>
+          </table>
+          <div class="warn-msg">⚠ Baris 3: Article bukan dari department yang dipilih</div>
+          <div class="toast-err">Perbaiki artikel yang bermasalah sebelum submit</div>
+        </div>
+      </div>
+      <p class="caption">Gbr 4.2 — Validasi artikel</p>
+    </div>
+    <div>
+      <table class="format-table">
+        <tr><th>Kondisi</th><th>Tampilan</th></tr>
+        <tr><td>Article valid &amp; dept sesuai</td><td><span style="color:#2e7d32;font-weight:700">Hijau ✓</span>, deskripsi terisi</td></tr>
+        <tr><td>Article tidak ditemukan</td><td><span style="color:#e53935;font-weight:700">Merah ✗</span>, pesan "Tidak ditemukan"</td></tr>
+        <tr><td>Article ada tapi dept beda</td><td><span style="color:#e65100;font-weight:700">Orange ⚠</span>, pesan "Bukan dept ini"</td></tr>
+        <tr><td>Dept diubah setelah artikel diisi</td><td>Border <span style="color:#f57c00;font-weight:700">orange</span>, perlu re-validasi</td></tr>
+      </table>
+      <div class="callout warn" style="margin-top:12px">
+        <h4>⚠️ Penting</h4>
+        Jika Department diubah setelah artikel sudah diisi, semua baris artikel akan ditandai <em>perlu re-validasi</em>. Klik keluar dari field setiap artikel untuk memvalidasi ulang.
+      </div>
+    </div>
+  </div>
+
+  <h3>4.3 Submit STR &amp; Nomor Pengajuan</h3>
+  <p>Setelah semua field diisi dan artikel tervalidasi, tekan <strong>SUBMIT STR</strong>. Sistem akan membuat nomor STR otomatis dengan format berikut:</p>
+  <div style="text-align:center;margin:16px 0"><span class="number-eg">001/J724/RUANG TAMU &amp; PENYIMPANAN/06/2026</span></div>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:45</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> Form STR</div>
+        <div class="screen-body">
+          <div style="text-align:center;padding:30px 10px 0">
+            <div style="font-size:32px;margin-bottom:8px">✅</div>
+            <div style="font-size:11px;font-weight:800;color:#2e7d32">STR Berhasil Disubmit!</div>
+            <div style="font-size:8.5px;color:#718096;margin-top:6px;margin-bottom:10px">Nomor Pengajuan:</div>
+            <div style="background:#1565c0;color:#fff;font-family:monospace;font-size:9px;padding:6px 8px;border-radius:6px;word-break:break-all;font-weight:700">001/J724/RUANG TAMU &amp; PENYIMPANAN/06/2026</div>
+            <div style="font-size:8.5px;color:#718096;margin-top:10px">Menunggu approval dari Manager/Dept Head</div>
+          </div>
+          <button class="btn btn-o" style="margin-top:20px">Kembali ke Menu</button>
+        </div>
+      </div>
+      <p class="caption">Gbr 4.3 — STR berhasil disubmit</p>
+    </div>
+    <div class="callout ok">
+      <h4>✅ Format Nomor STR</h4>
+      <p style="margin-top:8px"><strong>SEQ / SITE / DEPARTMENT / BULAN / TAHUN</strong></p>
+      <ul style="margin-top:8px;font-size:.87em">
+        <li><strong>SEQ</strong>: Urutan bulanan (001, 002, ...)</li>
+        <li><strong>SITE</strong>: Kode site pengaju (J724)</li>
+        <li><strong>DEPT</strong>: Nama department</li>
+        <li><strong>MM/YYYY</strong>: Bulan &amp; tahun submit</li>
+      </ul>
+      <p style="margin-top:8px;font-size:.85em">Counter SEQ direset setiap awal bulan.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section" id="s5">
+  <h2>5. Form ADJ (Adjustment)</h2>
+  <p>ADJ digunakan untuk melaporkan selisih stok fisik vs sistem (stock opname). Tidak ada tahap approval — langsung diproses ICO.</p>
+
+  <h3>5.1 Mengisi Form ADJ</h3>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>9:48</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> Form ADJ</div>
+        <div class="screen-body">
+          <div class="site-badge" style="background:#6a1b9a">J724</div>
+          <div class="site-sub">Jakarta Selatan</div>
+          <div class="lbl">Department *</div>
+          <input class="inp" value="RUANG TAMU &amp; PENYIMPANAN ▾" readonly>
+          <div class="lbl">Jenis Adjustment *</div>
+          <input class="inp" value="Selisih Stock ▾" readonly>
+          <div class="lbl">Keterangan</div>
+          <input class="inp" value="Normal ▾" readonly>
+          <hr class="divider">
+          <div class="sec-title">Item List (2 baris)</div>
+          <table class="row-table">
+            <tr><th>#</th><th>Article</th><th>Sys</th><th>Fisik</th><th>Disc</th><th>Receipt</th></tr>
+            <tr><td>1</td><td>1001234</td><td>100</td><td>95</td><td style="color:#e53935;font-weight:700">-5</td><td>RCP001</td></tr>
+            <tr><td>2</td><td>1001890</td><td>50</td><td>53</td><td style="color:#2e7d32;font-weight:700">+3</td><td>RCP002</td></tr>
+          </table>
+          <button class="btn-sm btn-o" style="margin-top:5px;width:100%">+ Tambah Baris</button>
+          <button class="btn btn-p" style="background:#6a1b9a;margin-top:8px">SUBMIT ADJ</button>
+        </div>
+      </div>
+      <p class="caption">Gbr 5.1 — Form ADJ terisi</p>
+    </div>
+    <div>
+      <table class="format-table">
+        <tr><th>Field</th><th>Keterangan</th></tr>
+        <tr><td><strong>Department</strong></td><td>Departemen pengaju. Memfilter artikel master.</td></tr>
+        <tr><td><strong>Jenis Adjustment</strong></td><td>Pilih jenis selisih (Selisih Stock, Salah Jual Rugi, dll.)</td></tr>
+        <tr><td><strong>Keterangan</strong></td><td>Keterangan tambahan adjustment.</td></tr>
+        <tr><td><strong>System Qty</strong></td><td>Jumlah stok menurut sistem/SAP.</td></tr>
+        <tr><td><strong>Fisik Qty</strong></td><td>Jumlah stok hasil hitung fisik.</td></tr>
+        <tr><td><strong>Disc</strong></td><td>Selisih (Fisik − Sistem). Terisi otomatis.</td></tr>
+        <tr><td><strong>Receipt/Email</strong></td><td>Nomor receipt atau email terkait.</td></tr>
+      </table>
+      <div class="callout tip" style="margin-top:12px">
+        <h4>💡 Disc (Selisih)</h4>
+        <ul style="margin-top:6px;font-size:.87em">
+          <li><span style="color:#e53935;font-weight:700">Disc negatif</span>: Fisik &lt; Sistem → stok kurang</li>
+          <li><span style="color:#2e7d32;font-weight:700">Disc positif</span>: Fisik &gt; Sistem → stok lebih</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>5.2 Validasi Article ADJ</h3>
+  <p>Sama seperti STR, artikel ADJ juga divalidasi terhadap department yang dipilih. Kode artikel harus ada di master dan sesuai department.</p>
+
+  <h3>5.3 Nomor ADJ</h3>
+  <p>Format nomor ADJ sama dengan STR, menggunakan counter bulanan terpisah:</p>
+  <div style="text-align:center;margin:12px 0"><span class="number-eg" style="background:#6a1b9a">001/J724/RUANG TAMU &amp; PENYIMPANAN/06/2026</span></div>
+</div>
+<!-- SECTION 6 -->
+<div class="section" id="s6">
+  <h2>6. Proses Approval STR</h2>
+  <p>Setelah Requestor submit STR, status menjadi <span class="badge b-wait">Waiting Approval</span>. Approver (Dept Head / Manager) akan menerima notifikasi Lark dan dapat membuka daftar STR untuk diproses.</p>
+
+  <h3>6.1 Daftar STR — Waiting Approval</h3>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>10:02</span><span>●●● 100%</span></div>
+        <div class="app-hdr">STR List — Approval</div>
+        <div class="screen-body">
+          <div class="sec-title">Menunggu Approval (3)</div>
+          <div class="card-item">
+            <div class="info-row"><span class="info-l">STR Number</span><span class="info-v bold-v">001/J724/RUANG TAMU.../06/2026</span></div>
+            <div class="info-row"><span class="info-l">Dept</span><span class="info-v">RUANG TAMU &amp; PENYIMPANAN</span></div>
+            <div class="info-row"><span class="info-l">Requested By</span><span class="info-v">Budi Santoso</span></div>
+            <div class="info-row"><span class="info-l">Status</span><span class="badge b-wait">Waiting Approval</span></div>
+          </div>
+          <div class="card-item">
+            <div class="info-row"><span class="info-l">STR Number</span><span class="info-v bold-v">002/J724/ELEKTRONIK.../06/2026</span></div>
+            <div class="info-row"><span class="info-l">Dept</span><span class="info-v">ELEKTRONIK</span></div>
+            <div class="info-row"><span class="info-l">Requested By</span><span class="info-v">Sari Dewi</span></div>
+            <div class="info-row"><span class="info-l">Status</span><span class="badge b-wait">Waiting Approval</span></div>
+          </div>
+          <div class="card-item" style="opacity:.6">
+            <div class="info-row"><span class="info-l">STR Number</span><span class="info-v bold-v">001/J724/FASHION.../06/2026</span></div>
+            <div class="info-row"><span class="info-l">Status</span><span class="badge b-done">Done</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Gbr 6.1 — Daftar STR untuk Approval</p>
+    </div>
+    <div class="callout">
+      <h4>📋 Status STR</h4>
+      <ul style="margin-top:8px;font-size:.88em">
+        <li><span class="badge b-wait inline-badge">Waiting Approval</span> — Menunggu approval</li>
+        <li style="margin-top:6px"><span class="badge b-ice inline-badge">Waiting ICO</span> — Sudah diapprove, menunggu ICO</li>
+        <li style="margin-top:6px"><span class="badge b-done inline-badge">Done</span> — Selesai diproses ICO</li>
+        <li style="margin-top:6px"><span class="badge b-rej inline-badge">Reject</span> — Ditolak</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>6.2 Detail STR &amp; Approve / Reject</h3>
+  <p>Tap salah satu STR untuk melihat detail lengkap beserta daftar item, lalu pilih Approve atau Reject.</p>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>10:03</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> Detail STR</div>
+        <div class="screen-body">
+          <div class="sec-title">Info STR</div>
+          <div class="info-row"><span class="info-l">STR Number</span><span class="info-v bold-v" style="font-size:8px">001/J724/RUANG TAMU.../06/2026</span></div>
+          <div class="info-row"><span class="info-l">Site</span><span class="info-v">J724 — Jkt Selatan</span></div>
+          <div class="info-row"><span class="info-l">Supplying Site</span><span class="info-v">J001 — Gudang Pusat</span></div>
+          <div class="info-row"><span class="info-l">Department</span><span class="info-v">RUANG TAMU &amp; PENYIM...</span></div>
+          <div class="info-row"><span class="info-l">Plan Receive</span><span class="info-v">01/07/2026</span></div>
+          <div class="info-row"><span class="info-l">Requested By</span><span class="info-v">Budi Santoso</span></div>
+          <hr class="divider">
+          <div class="sec-title">Item List (2)</div>
+          <table class="row-table">
+            <tr><th>#</th><th>Article</th><th>Deskripsi</th><th>Req Qty</th><th>Apv Qty</th></tr>
+            <tr><td>1</td><td>1001234</td><td>Meja Kerja</td><td>10</td><td><input style="width:32px;font-size:9px;border:1px solid #cbd5e0;border-radius:3px;padding:1px 3px" value="10"></td></tr>
+            <tr><td>2</td><td>1001890</td><td>Kursi Lipat</td><td>5</td><td><input style="width:32px;font-size:9px;border:1px solid #cbd5e0;border-radius:3px;padding:1px 3px" value="5"></td></tr>
+          </table>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-d" style="flex:1;margin-top:0;padding:7px">Reject</button>
+            <button class="btn btn-g" style="flex:1;margin-top:0;padding:7px">Approve</button>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Gbr 6.2 — Detail STR + Approve/Reject</p>
+    </div>
+    <div>
+      <div class="callout ok">
+        <h4>✅ Cara Approve</h4>
+        <ol class="content-list" style="margin-top:8px;font-size:.88em">
+          <li>Periksa detail STR dan daftar item</li>
+          <li>Sesuaikan <strong>Apv Qty</strong> (Approval Qty) jika perlu — default sama dengan Req Qty</li>
+          <li>Tekan tombol <strong>Approve</strong></li>
+          <li>Status STR berubah ke <span class="badge b-ice inline-badge">Waiting ICO</span></li>
+        </ol>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <h4>❌ Cara Reject</h4>
+        <ol class="content-list" style="margin-top:8px;font-size:.88em">
+          <li>Tekan tombol <strong>Reject</strong></li>
+          <li>Isi alasan penolakan pada kolom yang muncul</li>
+          <li>Konfirmasi reject</li>
+          <li>Requestor mendapat notifikasi dan STR berstatus <span class="badge b-rej inline-badge">Reject</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section" id="s7">
+  <h2>7. ICO Processing — STR</h2>
+  <p>Setelah STR diapprove, status berubah ke <span class="badge b-ice">Waiting ICO</span>. Tim ICO memproses STR: mengisi PR Number, download CSV untuk upload ke SAP, lalu set status Done.</p>
+
+  <h3>7.1 Detail STR — Waiting ICO</h3>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>10:15</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> ICO — STR Detail</div>
+        <div class="screen-body">
+          <div class="sec-title">Info STR</div>
+          <div class="info-row"><span class="info-l">STR Number</span><span class="info-v bold-v" style="font-size:8px">001/J724/RUANG TAMU.../06/2026</span></div>
+          <div class="info-row"><span class="info-l">Type STR</span><span class="info-v">Transfer</span></div>
+          <div class="info-row"><span class="info-l">Supplying Site</span><span class="info-v">J001</span></div>
+          <div class="info-row"><span class="info-l">Kode Vendor</span><span class="info-v">VND-10012</span></div>
+          <div class="info-row"><span class="info-l">Department</span><span class="info-v">RUANG TAMU &amp; PENYIM...</span></div>
+          <div class="info-row"><span class="info-l">Plan Receive</span><span class="info-v">01/07/2026</span></div>
+          <hr class="divider">
+          <div class="sec-title">Item List (2)</div>
+          <table class="row-table">
+            <tr><th>#</th><th>Article</th><th>Deskripsi</th><th>Req</th><th>Apv</th></tr>
+            <tr><td>1</td><td>1001234</td><td>Meja Kerja</td><td>10</td><td style="font-weight:800;color:#1565c0">10</td></tr>
+            <tr><td>2</td><td>1001890</td><td>Kursi Lipat</td><td>5</td><td style="font-weight:800;color:#1565c0">5</td></tr>
+          </table>
+          <hr class="divider">
+          <button class="btn btn-o" style="margin-top:4px;font-size:10px;padding:7px">⬇ Download CSV (SAP)</button>
+          <div style="margin-top:8px">
+            <div class="lbl">PR Number *</div>
+            <input class="inp" value="" placeholder="Isi setelah upload ke SAP" readonly>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-d" style="flex:1;margin-top:0;padding:7px;font-size:10px">Reject</button>
+            <button class="btn btn-g" style="flex:1;margin-top:0;padding:7px;font-size:10px">Done ✓</button>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Gbr 7.1 — ICO STR Detail</p>
+    </div>
+    <div>
+      <div class="callout">
+        <h4>📋 Alur ICO STR</h4>
+        <ol class="content-list" style="margin-top:8px;font-size:.88em">
+          <li>Buka STR berstatus <span class="badge b-ice inline-badge">Waiting ICO</span></li>
+          <li>Tekan <strong>Download CSV</strong> — file CSV SAP ter-download otomatis</li>
+          <li>Upload file CSV ke sistem SAP</li>
+          <li>Setelah dapat <strong>PR Number</strong> dari SAP, isi di field PR Number</li>
+          <li>Tekan <strong>Done ✓</strong> untuk menyelesaikan</li>
+          <li>Status STR berubah ke <span class="badge b-done inline-badge">Done</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <h3>7.2 Format CSV STR (SAP Upload)</h3>
+  <p>CSV yang didownload berformat 19 kolom sesuai template upload SAP:</p>
+  <div class="csv-preview">STR ID,Type STR,Article,Description,Request Qty,Unit,C,Delivery Date,Mdse,Site,Stor.Loc,PGr,Requisnr,Tracking,Des.Vendor,Supplying Site,Splt,POrg,Reason
+001/J724/RUANG TAMU.../06/2026,Transfer,1001234,Meja Kerja Lipat,10,,,,, J724,,,,,VND-10012,J001,,RJ20,Rusak
+001/J724/RUANG TAMU.../06/2026,Transfer,1001890,Kursi Lipat Kantor,5,,,01/07/2026,,J724,,,,,VND-10012,J001,,RJ20,Habis</div>
+  <table class="format-table">
+    <tr><th>Kolom</th><th>Sumber Data</th></tr>
+    <tr><td>STR ID</td><td>Nomor STR</td></tr>
+    <tr><td>Article</td><td>Kode artikel</td></tr>
+    <tr><td>Request Qty</td><td>Approval Qty (jika ada) atau Request Qty</td></tr>
+    <tr><td>Delivery Date</td><td>Plan Receive Date</td></tr>
+    <tr><td>Site</td><td>Kode site pengaju</td></tr>
+    <tr><td>Des.Vendor</td><td>Kode Vendor dari Supplying Site</td></tr>
+    <tr><td>Supplying Site</td><td>Kode Supplying Site</td></tr>
+    <tr><td>POrg</td><td>Hardcode: <strong>RJ20</strong></td></tr>
+    <tr><td>Reason</td><td>Alasan permintaan per baris</td></tr>
+  </table>
+</div>
+<!-- SECTION 8 -->
+<div class="section" id="s8">
+  <h2>8. ICO Processing — ADJ</h2>
+  <p>ADJ yang disubmit langsung berstatus <span class="badge b-adj-ico">Waiting ICO</span>. Tim ICO mengisi Article Doc per baris, download CSV, lalu set Done.</p>
+
+  <h3>8.1 Detail ADJ — Waiting ICO</h3>
+  <div class="screen-wrap">
+    <div class="screen-block">
+      <div class="phone">
+        <div class="phone-bar"><span>11:00</span><span>●●● 100%</span></div>
+        <div class="app-hdr"><span class="back-ico">‹</span> ICO — ADJ Detail</div>
+        <div class="screen-body">
+          <div class="sec-title">Info ADJ</div>
+          <div class="info-row"><span class="info-l">ADJ Number</span><span class="info-v bold-v" style="font-size:8px">001/J724/RUANG TAMU.../06/2026</span></div>
+          <div class="info-row"><span class="info-l">Site</span><span class="info-v">J724 — Jkt Selatan</span></div>
+          <div class="info-row"><span class="info-l">Department</span><span class="info-v">RUANG TAMU &amp; PENYIM...</span></div>
+          <div class="info-row"><span class="info-l">Jenis</span><span class="info-v">Selisih Stock</span></div>
+          <div class="info-row"><span class="info-l">Status</span><span class="badge b-adj-ico">Waiting ICO</span></div>
+          <hr class="divider">
+          <div class="sec-title">Item List (2)</div>
+          <table class="row-table">
+            <tr><th>#</th><th>Art</th><th>Sys</th><th>Fisik</th><th>Disc</th><th>Article Doc *</th></tr>
+            <tr><td>1</td><td>1001234</td><td>100</td><td>95</td><td style="color:#e53935;font-weight:700">-5</td>
+              <td><input style="width:52px;font-size:8px;border:1px solid #cbd5e0;border-radius:3px;padding:2px 3px" placeholder="Doc No."></td></tr>
+            <tr><td>2</td><td>1001890</td><td>50</td><td>53</td><td style="color:#2e7d32;font-weight:700">+3</td>
+              <td><input style="width:52px;font-size:8px;border:1px solid #cbd5e0;border-radius:3px;padding:2px 3px" placeholder="Doc No."></td></tr>
+          </table>
+          <hr class="divider">
+          <div class="lbl">Nomor Reservasi *</div>
+          <input class="inp" placeholder="Isi Nomor Reservasi" readonly>
+          <button class="btn btn-o" style="margin-top:4px;font-size:10px;padding:7px">⬇ Download CSV (SAP)</button>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-d" style="flex:1;margin-top:0;padding:7px;font-size:10px">Reject</button>
+            <button class="btn btn-g" style="flex:1;margin-top:0;padding:7px;font-size:10px">Process Done</button>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Gbr 8.1 — ICO ADJ Detail</p>
+    </div>
+    <div>
+      <div class="callout" style="background:#f3e5f5;border-color:#9c27b0;color:#4a148c">
+        <h4>📋 Alur ICO ADJ</h4>
+        <ol class="content-list" style="margin-top:8px;font-size:.88em">
+          <li>Buka ADJ berstatus <span class="badge b-adj-ico inline-badge">Waiting ICO</span></li>
+          <li>Isi kolom <strong>Article Doc</strong> untuk setiap baris item</li>
+          <li>Isi <strong>Nomor Reservasi</strong> (wajib)</li>
+          <li>Tekan <strong>Download CSV</strong> untuk mendapatkan file SAP</li>
+          <li>Upload CSV ke SAP</li>
+          <li>Tekan <strong>Process Done</strong> untuk menyelesaikan</li>
+          <li>Status ADJ berubah ke <span class="badge b-done inline-badge">Done</span></li>
+        </ol>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <h4>⚠️ Perhatian</h4>
+        <strong>Nomor Reservasi wajib diisi</strong> sebelum menekan Process Done. Tombol tidak akan aktif jika field kosong.
+      </div>
+    </div>
+  </div>
+
+  <h3>8.2 Format CSV ADJ (SAP Upload)</h3>
+  <p>CSV ADJ menggunakan 7 kolom sesuai template upload SAP Adjustment:</p>
+  <div class="csv-preview">Article,Discrep,Sloc1,Site,Sloc2,Remark,Mvt
+1001234,-5,1009,J724,1009,RCP001,939
+1001890,3,1000,J724,1000,RCP002,940</div>
+  <table class="format-table">
+    <tr><th>Kolom</th><th>Sumber / Logika</th></tr>
+    <tr><td><strong>Article</strong></td><td>Kode artikel</td></tr>
+    <tr><td><strong>Discrep</strong></td><td>Nilai Disc (Fisik − Sistem)</td></tr>
+    <tr><td><strong>Sloc1</strong></td><td>Jika Sistem &lt; Fisik (disc +) → <strong>1000</strong>; jika Sistem &gt; Fisik (disc −) → <strong>1009</strong></td></tr>
+    <tr><td><strong>Site</strong></td><td>Kode site ADJ</td></tr>
+    <tr><td><strong>Sloc2</strong></td><td>Jika Sistem &gt; Fisik (disc −) → <strong>1009</strong>; jika Sistem &lt; Fisik (disc +) → <strong>1000</strong></td></tr>
+    <tr><td><strong>Remark</strong></td><td>Nilai Receipt/Email dari form</td></tr>
+    <tr><td><strong>Mvt</strong></td><td>Disc negatif → <strong>939</strong>; disc positif → <strong>940</strong></td></tr>
+  </table>
+  <div class="callout tip" style="margin-top:12px">
+    <h4>💡 Logika Sloc &amp; Mvt</h4>
+    <ul style="font-size:.88em;margin-top:6px">
+      <li><strong>Disc + (Fisik &gt; Sistem)</strong>: Sloc1=1000, Sloc2=1000, Mvt=<strong>940</strong></li>
+      <li><strong>Disc − (Fisik &lt; Sistem)</strong>: Sloc1=1009, Sloc2=1009, Mvt=<strong>939</strong></li>
+    </ul>
+  </div>
+</div>
+
+<!-- APPENDIX A -->
+<div class="section" id="app-a">
+  <h2>Lampiran A: Format Nomor Pengajuan</h2>
+  <p>Baik STR maupun ADJ menggunakan format nomor yang sama:</p>
+  <div style="text-align:center;margin:20px 0"><span class="number-eg">SEQ / SITE / DEPARTMENT / MM / YYYY</span></div>
+  <table class="format-table">
+    <tr><th>Bagian</th><th>Keterangan</th><th>Contoh</th></tr>
+    <tr><td><strong>SEQ</strong></td><td>Urutan bulanan, 3 digit, reset tiap bulan</td><td>001, 002, 015</td></tr>
+    <tr><td><strong>SITE</strong></td><td>Kode site pengaju</td><td>J724</td></tr>
+    <tr><td><strong>DEPARTMENT</strong></td><td>Nama department lengkap</td><td>RUANG TAMU &amp; PENYIMPANAN</td></tr>
+    <tr><td><strong>MM</strong></td><td>Bulan submit (2 digit)</td><td>06</td></tr>
+    <tr><td><strong>YYYY</strong></td><td>Tahun submit</td><td>2026</td></tr>
+  </table>
+  <div style="text-align:center;margin:16px 0">
+    <div style="font-size:.85em;color:#718096;margin-bottom:8px">Contoh lengkap:</div>
+    <span class="number-eg">003/J724/RUANG TAMU &amp; PENYIMPANAN/06/2026</span>
+  </div>
+  <div class="callout">Counter SEQ untuk STR dan ADJ berjalan <strong>terpisah</strong>. STR ke-3 di bulan Juni bisa bernomor 003, sementara ADJ ke-1 di bulan yang sama bernomor 001.</div>
+</div>
+
+<!-- APPENDIX B -->
+<div class="section" id="app-b" style="margin-bottom:60px">
+  <h2>Lampiran B: Ringkasan Format CSV SAP</h2>
+  <h3>CSV STR — 19 Kolom</h3>
+  <table class="format-table">
+    <tr><th>#</th><th>Kolom</th><th>Sumber</th></tr>
+    <tr><td>1</td><td>STR ID</td><td>Nomor STR</td></tr>
+    <tr><td>2</td><td>Type STR</td><td>Jenis STR dari header</td></tr>
+    <tr><td>3</td><td>Article</td><td>Kode artikel</td></tr>
+    <tr><td>4</td><td>Description</td><td>Deskripsi artikel</td></tr>
+    <tr><td>5</td><td>Request Qty</td><td>Approval Qty (atau Req Qty jika belum diapprove)</td></tr>
+    <tr><td>6–9</td><td>Unit, C, Delivery Date, Mdse</td><td>Unit kosong; Delivery Date = Plan Receive Date</td></tr>
+    <tr><td>10</td><td>Site</td><td>Kode site</td></tr>
+    <tr><td>11–14</td><td>Stor.Loc, PGr, Requisnr, Tracking</td><td>Kosong</td></tr>
+    <tr><td>15</td><td>Des.Vendor</td><td>Kode Vendor dari Supplying Site</td></tr>
+    <tr><td>16</td><td>Supplying Site</td><td>Kode Supplying Site</td></tr>
+    <tr><td>17</td><td>Splt</td><td>Kosong</td></tr>
+    <tr><td>18</td><td>POrg</td><td>Hardcode: <strong>RJ20</strong></td></tr>
+    <tr><td>19</td><td>Reason</td><td>Alasan per baris</td></tr>
+  </table>
+
+  <h3>CSV ADJ — 7 Kolom</h3>
+  <table class="format-table">
+    <tr><th>#</th><th>Kolom</th><th>Sumber / Logika</th></tr>
+    <tr><td>1</td><td>Article</td><td>Kode artikel</td></tr>
+    <tr><td>2</td><td>Discrep</td><td>Nilai Disc (Fisik − Sistem)</td></tr>
+    <tr><td>3</td><td>Sloc1</td><td>Disc + → 1000 | Disc − → 1009</td></tr>
+    <tr><td>4</td><td>Site</td><td>Kode site</td></tr>
+    <tr><td>5</td><td>Sloc2</td><td>Disc − → 1009 | Disc + → 1000</td></tr>
+    <tr><td>6</td><td>Remark</td><td>Receipt/Email</td></tr>
+    <tr><td>7</td><td>Mvt</td><td>Disc − → 939 | Disc + → 940</td></tr>
+  </table>
+
+  <div style="text-align:center;margin-top:48px;padding-top:24px;border-top:1px solid #e2e8f0;color:#a0aec0;font-size:.82em">
+    STR &amp; ADJ Request System &nbsp;|&nbsp; User Manual v1.0 &nbsp;|&nbsp; Juni 2026<br>
+    <span style="font-size:.9em">Untuk pertanyaan hubungi tim ICO</span>
+  </div>
+</div>
+</div>
+</body>
+</html>
