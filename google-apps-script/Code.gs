@@ -348,48 +348,44 @@ function lookupArticle(code, dept) {
 
 // ─── STR Number Generation ────────────────────────────────────────────────────
 
-function generateSTRNumber(site) {
+function generateSTRNumber(site, dept) {
   var now    = new Date();
-  var yy     = now.getFullYear().toString().slice(-2);
   var mm     = ('0' + (now.getMonth() + 1)).slice(-2);
-  var dd     = ('0' + now.getDate()).slice(-2);
-  var dateStr = yy + mm + dd;
+  var yyyy   = now.getFullYear().toString();
+  var marker = '/' + mm + '/' + yyyy; // cari semua STR bulan ini
 
   var token = getLarkToken();
   var resp  = larkApiPost(BASE + STR_APP + '/tables/' + STR_HEADER + '/records/search', token, {
     filter: {
       conjunction: 'and',
-      conditions: [{ field_name: 'STR Number', operator: 'contains', value: [dateStr] }]
+      conditions: [{ field_name: 'STR Number', operator: 'contains', value: [marker] }]
     },
-    page_size: 200
+    page_size: 500
   });
-  var count   = ((resp.data && resp.data.items) || []).length;
-  var seq     = ('000' + (count + 1)).slice(-3);
-  var siteCode = site ? site.replace(/\s/g,'').toUpperCase().slice(0, 4) : 'STR';
-  return 'STR-' + siteCode + '-' + dateStr + '-' + seq;
+  var count = ((resp.data && resp.data.items) || []).length;
+  var seq   = ('000' + (count + 1)).slice(-3);
+  return seq + '/' + (site || '') + '/' + (dept || '') + '/' + mm + '/' + yyyy;
 }
 
 // ─── ADJ Number Generation ────────────────────────────────────────────────────
 
-function generateADJNumber(site) {
-  var now     = new Date();
-  var yy      = now.getFullYear().toString().slice(-2);
-  var mm      = ('0' + (now.getMonth() + 1)).slice(-2);
-  var dd      = ('0' + now.getDate()).slice(-2);
-  var dateStr = yy + mm + dd;
+function generateADJNumber(site, dept) {
+  var now    = new Date();
+  var mm     = ('0' + (now.getMonth() + 1)).slice(-2);
+  var yyyy   = now.getFullYear().toString();
+  var marker = '/' + mm + '/' + yyyy; // cari semua ADJ bulan ini
 
   var token = getLarkToken();
   var resp  = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records/search', token, {
     filter: {
       conjunction: 'and',
-      conditions: [{ field_name: 'ADJ Number', operator: 'contains', value: [dateStr] }]
+      conditions: [{ field_name: 'ADJ Number', operator: 'contains', value: [marker] }]
     },
-    page_size: 200
+    page_size: 500
   });
-  var count    = ((resp.data && resp.data.items) || []).length;
-  var seq      = ('000' + (count + 1)).slice(-3);
-  var siteCode = site ? site.replace(/\s/g, '').toUpperCase().slice(0, 4) : 'ADJ';
-  return 'ADJ-' + siteCode + '-' + dateStr + '-' + seq;
+  var count = ((resp.data && resp.data.items) || []).length;
+  var seq   = ('000' + (count + 1)).slice(-3);
+  return seq + '/' + (site || '') + '/' + (dept || '') + '/' + mm + '/' + yyyy;
 }
 
 // ─── Upload Validation ────────────────────────────────────────────────────────
@@ -506,7 +502,7 @@ function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) 
 
 function submitADJForm(header, items, attachment) {
   var token     = getLarkToken();
-  var adjNumber = generateADJNumber(header.site);
+  var adjNumber = generateADJNumber(header.site, header.department);
 
   Logger.log('submitADJForm: adjNumber=' + adjNumber + ' itemsCount=' + (items ? items.length : 'null'));
   Logger.log('submitADJForm: items=' + JSON.stringify(items));
@@ -576,7 +572,7 @@ function submitADJForm(header, items, attachment) {
 function submitSTR(data) {
   var token = getLarkToken();
 
-  var strNumber  = generateSTRNumber(data.site);
+  var strNumber  = generateSTRNumber(data.site, data.department);
 
   // Create header
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + STR_HEADER + '/records', token, {
@@ -802,7 +798,7 @@ function doPost(e) {
     if (body.action === 'uploadBA') {
       var adjNum  = String(body.adjNumber || '').trim();
       // Validasi format ADJ Number: ADJ-SITE-YYYYMMDD-N (contoh: ADJ-ABCD-20240101-1)
-      if (!/^ADJ-[A-Z0-9]{1,6}-\d{6}-\d+$/.test(adjNum)) {
+      if (!/^\d{3}\/[^\/]+\/[^\/]+\/\d{2}\/\d{4}$/.test(adjNum)) {
         throw new Error('Format ADJ Number tidak valid.');
       }
       var ba      = body.attachment;
@@ -839,7 +835,7 @@ function doPost(e) {
 
 function submitSTRForm(header, items) {
   var token     = getLarkToken();
-  var strNumber = generateSTRNumber(header.site);
+  var strNumber = generateSTRNumber(header.site, header.department);
 
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + STR_HEADER + '/records', token, {
     fields: {
