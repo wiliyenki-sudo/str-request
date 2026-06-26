@@ -241,11 +241,12 @@ function getSupplySitesFromGSheet_() {
     var seen   = {};
     var result = [];
     for (var i = 1; i < data.length; i++) {
-      var code = String(data[i][9] != null ? data[i][9] : '').trim();
-      var name = String(data[i][10] != null ? data[i][10] : '').trim();
+      var code       = String(data[i][9]  != null ? data[i][9]  : '').trim(); // col J = Site DC
+      var name       = String(data[i][10] != null ? data[i][10] : '').trim(); // col K = Nama DC
+      var vendorCode = String(data[i][12] != null ? data[i][12] : '').trim(); // col M = Kode Vendor
       if (code && !seen[code]) {
         seen[code] = true;
-        result.push({ code: code, name: name });
+        result.push({ code: code, name: name, vendorCode: vendorCode });
       }
     }
     return result;
@@ -841,10 +842,11 @@ function submitSTRForm(header, items) {
     fields: {
       'STR Number':      strNumber,
       'Site':            header.site,
-      'Site Name':       header.siteName    || '',
-      'Type STR':        header.typeStr     || '',
-      'Supplying Site':  header.supplyingSite || '',
-      'Department':      header.department  || '',
+      'Site Name':       header.siteName      || '',
+      'Type STR':        header.typeStr        || '',
+      'Supplying Site':  header.supplyingSite  || '',
+      'Kode Vendor':     header.vendorCode     || '',
+      'Department':      header.department     || '',
       'Plan Receive Date': header.planReceiveDate ? new Date(header.planReceiveDate).getTime() : null,
       'Requested By':    header.requestedBy || '',
       'Submit Date':     Date.now(),

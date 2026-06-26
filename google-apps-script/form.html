@@ -160,6 +160,10 @@
             <select id="f-supply" required></select>
           </div>
           <div class="form-group">
+            <label for="f-vendor-code">Kode Vendor</label>
+            <input type="text" id="f-vendor-code" readonly style="background:#f0f4f8;color:#555;">
+          </div>
+          <div class="form-group">
             <label for="f-dept">Department *</label>
             <select id="f-dept" required></select>
           </div>
@@ -293,6 +297,7 @@
     // SCRIPT_URL di-inject oleh GAS template engine (createTemplateFromFile)
     var SCRIPT_URL = '<?= scriptUrl ?>';
     var rowCount = 0;
+    var _supplyVendorMap = {};
 
     function show(id) {
       ['screen-loading','screen-error','screen-login','screen-form','screen-adj-form','screen-success'].forEach(function(s) {
@@ -321,6 +326,11 @@
             return a.code < b.code ? -1 : a.code > b.code ? 1 : 0;
           }).map(function(s) {
             return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
+          });
+          // Build vendor code lookup map (supplyCode → vendorCode)
+          _supplyVendorMap = {};
+          (data.supplySites || []).forEach(function(s) {
+            if (s.code) _supplyVendorMap[s.code] = s.vendorCode || '';
           });
           var supplyOpts = (data.supplySites || []).map(function(s) {
             return { value: s.code, label: s.code + (s.name ? ' — ' + s.name : '') };
@@ -477,6 +487,7 @@
           siteName:        siteName,
           typeStr:         document.getElementById('f-type').value,
           supplyingSite:   document.getElementById('f-supply').value,
+          vendorCode:      document.getElementById('f-vendor-code').value,
           department:      document.getElementById('f-dept').value,
           planReceiveDate: document.getElementById('f-date').value,
           requestedBy:     document.getElementById('f-reqby').value.trim()
@@ -542,6 +553,11 @@
 
     document.getElementById('btn-add-item').addEventListener('click', addRow);
     document.getElementById('btn-back').addEventListener('click', function() { show('screen-login'); });
+
+    // Auto-fill Kode Vendor saat Supplying Site dipilih
+    document.getElementById('f-supply').addEventListener('change', function() {
+      document.getElementById('f-vendor-code').value = _supplyVendorMap[this.value] || '';
+    });
 
     // Saat department STR berubah — invalidate semua validasi artikel yg sudah ada
     document.getElementById('f-dept').addEventListener('change', function() {
@@ -844,6 +860,7 @@
 
     function resetForm() {
       document.getElementById('str-form').reset();
+      document.getElementById('f-vendor-code').value = '';
       document.getElementById('item-tbody').innerHTML = '';
       rowCount = 0;
       // Reset ADJ form
