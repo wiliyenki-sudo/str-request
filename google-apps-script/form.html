@@ -298,6 +298,7 @@
     var SCRIPT_URL = '<?= scriptUrl ?>';
     var rowCount = 0;
     var _supplyVendorMap = {};
+    var _deptMap = {};  // code → name, untuk submit pakai nama bukan kode
 
     function show(id) {
       ['screen-loading','screen-error','screen-login','screen-form','screen-adj-form','screen-success'].forEach(function(s) {
@@ -340,8 +341,11 @@
           fillSelect('l-site',   siteOpts);
           fillSelect('a-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
-          fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d.code, label: d.code + ' — ' + d.name }; }));
-          fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d.code, label: d.code + ' — ' + d.name }; }));
+          _deptMap = {};
+          (data.departments || []).forEach(function(d) { if (d.code) _deptMap[d.code] = d.name || d.code; });
+          var deptOpts = (data.departments || []).map(function(d) { return { value: d.code, label: d.name || d.code }; });
+          fillSelect('f-dept', deptOpts);
+          fillSelect('a-dept', deptOpts);
           show('screen-login');
         })
         .catch(function(e) {
@@ -491,7 +495,7 @@
           typeStr:         document.getElementById('f-type').value,
           supplyingSite:   document.getElementById('f-supply').value,
           vendorCode:      document.getElementById('f-vendor-code').value,
-          department:      document.getElementById('f-dept').value,
+          department:      _deptMap[document.getElementById('f-dept').value] || document.getElementById('f-dept').value,
           planReceiveDate: document.getElementById('f-date').value,
           requestedBy:     document.getElementById('f-reqby').value.trim()
         },
@@ -809,7 +813,7 @@
           adjHeader: {
             site:        aSite.value,
             siteName:    siteParts[1] || '',
-            department:  document.getElementById('a-dept').value.trim(),
+            department:  _deptMap[document.getElementById('a-dept').value] || document.getElementById('a-dept').value.trim(),
             jenis:         document.getElementById('a-jenis').value,
             keterangan:    document.getElementById('a-ket').value,
             requestedBy:   document.getElementById('a-reqby').value.trim()
