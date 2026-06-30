@@ -552,12 +552,11 @@ function submitADJForm(header, items, attachment) {
     var detailResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_DETAIL + '/records', token, {
       fields: {
         'ADJ Number':    adjNumber,
-        'Row Sequence':  i + 1,
         'Article':       item.article      || '',
         'Description':   item.description  || '',
         'System Qty':    parseFloat(item.system) || 0,
         'Fisik Qty':     parseFloat(item.fisik)  || 0,
-        'Disc':          parseFloat(item.disc)   || 0,
+        'DISC':          parseFloat(item.disc)   || 0,
         'Receipt Email': item.receiptEmail || ''
       }
     });
