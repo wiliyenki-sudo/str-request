@@ -182,7 +182,7 @@ var ART_META_KEY       = 'artd_meta';
 function getDropdowns() {
   // Cache dropdown data 15 menit — Sites/Types/Depts jarang berubah
   var cache     = CacheService.getScriptCache();
-  var cacheKey  = 'dropdowns_v4';
+  var cacheKey  = 'dropdowns_v5';
   var cached    = cache.get(cacheKey);
   if (cached) {
     try { return JSON.parse(cached); } catch(e) {}
