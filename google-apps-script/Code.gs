@@ -221,9 +221,11 @@ function getDropdowns() {
     { page_size: 500 }
   );
   var departments = ((deptResp.data && deptResp.data.items) || []).map(function(r) {
-    var keys = Object.keys(r.fields);
-    return fieldText(r.fields[keys[0]]);
-  }).filter(Boolean);
+    return {
+      code: fieldText(r.fields['Dept Code']),
+      name: fieldText(r.fields['Dept Name'])
+    };
+  }).filter(function(d) { return d.code; });
 
   var result = { sites: sites, supplySites: supplySites, strTypes: strTypes, departments: departments };
   try { cache.put(cacheKey, JSON.stringify(result), 15 * 60); } catch(e) {}

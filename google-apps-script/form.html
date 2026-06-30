@@ -340,8 +340,8 @@
           fillSelect('l-site',   siteOpts);
           fillSelect('a-site',   siteOpts);
           fillSelect('f-type',   (data.strTypes || []).map(function(t) { return { value: t, label: t }; }));
-          fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
-          fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d, label: d }; }));
+          fillSelect('f-dept',   (data.departments || []).map(function(d) { return { value: d.code, label: d.code + ' — ' + d.name }; }));
+          fillSelect('a-dept',   (data.departments || []).map(function(d) { return { value: d.code, label: d.code + ' — ' + d.name }; }));
           show('screen-login');
         })
         .catch(function(e) {
