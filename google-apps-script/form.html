@@ -390,8 +390,10 @@
               desc.value = res.description; desc.readOnly = true; desc.style.background = '#f0f4f8';
               art.style.borderColor = ''; art.setAttribute('data-art-valid', '1'); art.removeAttribute('data-art-err');
             } else if (res.wrongDept) {
-              desc.value = ''; desc.readOnly = false; desc.style.background = '';
-              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0'); art.setAttribute('data-art-err', 'wrongdept');
+              desc.value = '[Dept master: ' + (res.articleDept || '?') + ']';
+              desc.readOnly = true; desc.style.background = '#fff0f0';
+              art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0');
+              art.setAttribute('data-art-err', 'wrongdept'); art.setAttribute('data-art-dept', res.articleDept || '');
             } else {
               desc.value = ''; desc.readOnly = false; desc.style.background = '';
               art.style.borderColor = '#e53935'; art.setAttribute('data-art-valid', '0'); art.setAttribute('data-art-err', 'notfound');
@@ -465,9 +467,10 @@
         if (!inp.value.trim()) return;
         var v = inp.getAttribute('data-art-valid');
         var e = inp.getAttribute('data-art-err');
-        if (v === '0' && e === 'wrongdept')
-          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" bukan dari department ini');
-        else if (v === '0')
+        if (v === '0' && e === 'wrongdept') {
+          var artDeptVal = inp.getAttribute('data-art-dept') || '?';
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" dept di master: "' + artDeptVal + '"');
+        } else if (v === '0')
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
         else if (!v)
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" belum divalidasi — tab keluar dari kolom artikel');
@@ -685,8 +688,10 @@
               artInp.style.borderColor = ''; artInp.setAttribute('data-art-valid', '1'); artInp.removeAttribute('data-art-err');
             } else if (res.wrongDept) {
               if (res.error) console.warn('[lookupArticle] GAS error:', res.error);
-              descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
-              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0'); artInp.setAttribute('data-art-err', 'wrongdept');
+              descInp.value = '[Dept master: ' + (res.articleDept || '?') + ']';
+              descInp.readOnly = true; descInp.style.background = '#fff0f0';
+              artInp.style.borderColor = '#e53935'; artInp.setAttribute('data-art-valid', '0');
+              artInp.setAttribute('data-art-err', 'wrongdept'); artInp.setAttribute('data-art-dept', res.articleDept || '');
             } else {
               if (res.error) console.warn('[lookupArticle] GAS error:', res.error);
               descInp.value = ''; descInp.readOnly = false; descInp.style.background = '';
@@ -764,9 +769,10 @@
         if (!inp.value.trim()) { errs.push('Baris ' + (i+1) + ': Article wajib diisi'); return; }
         var v = inp.getAttribute('data-art-valid');
         var e = inp.getAttribute('data-art-err');
-        if (v === '0' && e === 'wrongdept')
-          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" bukan dari department ini');
-        else if (v === '0')
+        if (v === '0' && e === 'wrongdept') {
+          var artDeptVal = inp.getAttribute('data-art-dept') || '?';
+          errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" dept di master: "' + artDeptVal + '"');
+        } else if (v === '0')
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" tidak ditemukan di master');
         else if (!v)
           errs.push('Baris ' + (i+1) + ': Article "' + inp.value.trim() + '" belum divalidasi — tab keluar dari kolom artikel');
