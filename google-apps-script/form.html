@@ -247,6 +247,16 @@
           <input type="file" id="a-attachment" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
           <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB.</span>
         </div>
+        <div class="form-group">
+          <label for="a-attachment2">Attachment 2 (opsional)</label>
+          <input type="file" id="a-attachment2" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
+          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB.</span>
+        </div>
+        <div class="form-group">
+          <label for="a-attachment3">Attachment 3 (opsional)</label>
+          <input type="file" id="a-attachment3" accept="image/*,.pdf,.jpg,.jpeg,.png,.gif">
+          <span style="font-size:11px;color:#888;margin-top:2px;display:block">Maks 2.5 MB.</span>
+        </div>
       </div>
       <hr>
       <div class="table-section">
@@ -764,9 +774,11 @@
       if (!document.getElementById('a-jenis').value)         errs.push('Jenis Adjustment wajib dipilih');
       if (!document.getElementById('a-ket').value)           errs.push('Keterangan Adjustment wajib dipilih');
       if (!document.getElementById('a-reqby').value.trim())  errs.push('Requested By wajib diisi');
-      var f = document.getElementById('a-attachment').files;
-      if (!f.length)                    errs.push('Upload bukti wajib dilampirkan');
-      else if (f[0].size > 8*1024*1024) errs.push('File terlalu besar (maks 8 MB)');
+      if (!document.getElementById('a-attachment').files.length) errs.push('Upload bukti wajib dilampirkan');
+      ['a-attachment','a-attachment2','a-attachment3'].forEach(function(id, idx) {
+        var f = document.getElementById(id).files;
+        if (f.length && f[0].size > 2.5*1024*1024) errs.push('Attachment ' + (idx+1) + ' terlalu besar (maks 2.5 MB)');
+      });
       var rows = getAdjRows();
       if (rows.length === 0) errs.push('Minimal 1 item harus ditambahkan');
       document.querySelectorAll('#adj-tbody .a-art').forEach(function(inp, i) {
@@ -789,58 +801,68 @@
     function doADJSubmit() {
       var btn   = document.getElementById('adj-btn-submit');
       var errEl = document.getElementById('adj-error-msg');
-      var file  = document.getElementById('a-attachment').files[0];
+      var files = ['a-attachment','a-attachment2','a-attachment3']
+        .map(function(id) { return document.getElementById(id).files[0]; })
+        .filter(Boolean);
 
       // Client-side validation (GAS juga validasi server-side)
-      if (file) {
-        if (file.size > 2.5 * 1024 * 1024) {
-          errEl.textContent = 'File terlalu besar. Maksimal 2.5 MB.';
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].size > 2.5 * 1024 * 1024) {
+          errEl.textContent = 'File "' + files[i].name + '" terlalu besar. Maksimal 2.5 MB.';
           errEl.style.display = 'block'; return;
         }
-        if (file.type && ALLOWED_UPLOAD_TYPES.indexOf(file.type) === -1) {
-          errEl.textContent = 'Tipe file tidak diizinkan. Hanya gambar (JPG/PNG/GIF/WebP/BMP) dan PDF.';
+        if (files[i].type && ALLOWED_UPLOAD_TYPES.indexOf(files[i].type) === -1) {
+          errEl.textContent = 'Tipe file "' + files[i].name + '" tidak diizinkan. Hanya gambar (JPG/PNG/GIF/WebP/BMP) dan PDF.';
           errEl.style.display = 'block'; return;
         }
       }
 
       btn.disabled = true; btn.textContent = 'Mengupload...';
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var base64    = e.target.result.split(',')[1];
-        var aSite     = document.getElementById('a-site');
-        var siteParts = aSite.options[aSite.selectedIndex] ? aSite.options[aSite.selectedIndex].text.split(' — ') : ['', ''];
-        var payload   = {
-          adjHeader: {
-            site:        aSite.value,
-            siteName:    siteParts[1] || '',
-            department:  _deptMap[document.getElementById('a-dept').value] || document.getElementById('a-dept').value.trim(),
-            jenis:         document.getElementById('a-jenis').value,
-            keterangan:    document.getElementById('a-ket').value,
-            requestedBy:   document.getElementById('a-reqby').value.trim()
-          },
-          adjItems:   getAdjRows(),
-          attachment: { name: file.name, type: file.type || 'application/octet-stream', data_base64: base64 }
-        };
-        btn.textContent = 'Menyimpan...';
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
-          .then(function(res) { return res.json(); })
-          .then(function(result) {
-            if (!result.success) throw new Error(result.error || 'Submit gagal');
-            document.getElementById('success-title').textContent = 'ADJ Request Berhasil!';
-            document.getElementById('success-label').textContent = result.attachmentWarning
-              ? '⚠️ Attachment gagal: ' + result.attachmentWarning
-              : 'Nomor ADJ kamu:';
-            document.getElementById('success-btn').textContent   = 'Buat ADJ Baru';
-            document.getElementById('str-number-display').textContent = result.adjNumber;
-            show('screen-success');
-          })
-          .catch(function(err) {
-            errEl.textContent = 'Submit gagal: ' + (err.message || String(err));
-            errEl.style.display = 'block';
-            btn.disabled = false; btn.textContent = 'Submit ADJ';
-          });
-      };
-      reader.readAsDataURL(file);
+      function readFile(file) {
+        return new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload  = function(e) {
+            resolve({ name: file.name, type: file.type || 'application/octet-stream', data_base64: e.target.result.split(',')[1] });
+          };
+          reader.onerror = function() { reject(new Error('Gagal membaca file ' + file.name)); };
+          reader.readAsDataURL(file);
+        });
+      }
+      Promise.all(files.map(readFile))
+        .then(function(attachments) {
+          var aSite     = document.getElementById('a-site');
+          var siteParts = aSite.options[aSite.selectedIndex] ? aSite.options[aSite.selectedIndex].text.split(' — ') : ['', ''];
+          var payload   = {
+            adjHeader: {
+              site:        aSite.value,
+              siteName:    siteParts[1] || '',
+              department:  _deptMap[document.getElementById('a-dept').value] || document.getElementById('a-dept').value.trim(),
+              jenis:         document.getElementById('a-jenis').value,
+              keterangan:    document.getElementById('a-ket').value,
+              requestedBy:   document.getElementById('a-reqby').value.trim()
+            },
+            adjItems:    getAdjRows(),
+            attachments: attachments
+          };
+          btn.textContent = 'Menyimpan...';
+          return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+          if (!result.success) throw new Error(result.error || 'Submit gagal');
+          document.getElementById('success-title').textContent = 'ADJ Request Berhasil!';
+          document.getElementById('success-label').textContent = result.attachmentWarning
+            ? '⚠️ Attachment gagal: ' + result.attachmentWarning
+            : 'Nomor ADJ kamu:';
+          document.getElementById('success-btn').textContent   = 'Buat ADJ Baru';
+          document.getElementById('str-number-display').textContent = result.adjNumber;
+          show('screen-success');
+        })
+        .catch(function(err) {
+          errEl.textContent = 'Submit gagal: ' + (err.message || String(err));
+          errEl.style.display = 'block';
+          btn.disabled = false; btn.textContent = 'Submit ADJ';
+        });
     }
 
     document.getElementById('adj-btn-add').addEventListener('click', function() {
@@ -882,6 +904,8 @@
       document.getElementById('a-ket').value         = '';
       document.getElementById('a-reqby').value       = '';
       document.getElementById('a-attachment').value  = '';
+      document.getElementById('a-attachment2').value = '';
+      document.getElementById('a-attachment3').value = '';
       document.getElementById('adj-tbody').innerHTML = '';
       _adjRowCount = 0;
       loadDropdowns();

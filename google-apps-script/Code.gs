@@ -503,7 +503,7 @@ function uploadFileToLark(base64Data, fileName, mimeType, parentNode, appToken) 
 
 // ─── Submit ADJ dari Form HTML ────────────────────────────────────────────────
 
-function submitADJForm(header, items, attachment) {
+function submitADJForm(header, items, attachments) {
   var token     = getLarkToken();
   var adjNumber = generateADJNumber(header.site, header.department);
 
@@ -515,18 +515,26 @@ function submitADJForm(header, items, attachment) {
     throw new Error('items kosong atau tidak valid: ' + JSON.stringify(items));
   }
 
+  // Upload semua attachment (maks 3 dari form) — gagal satu file tidak menggagalkan submit
   var attachmentField   = null;
   var attachmentWarning = null;
-  if (attachment && attachment.data_base64) {
+  var attList  = attachments || [];
+  var uploaded = [];
+  var warnings = [];
+  for (var a = 0; a < attList.length; a++) {
+    var att = attList[a];
+    if (!att || !att.data_base64) continue;
     try {
-      var fileToken   = uploadFileToLark(attachment.data_base64, attachment.name, attachment.type, STR_APP, STR_APP);
-      attachmentField = [{ file_token: fileToken, name: attachment.name }];
-      Logger.log('submitADJForm: attachment uploaded, fileToken=' + fileToken);
+      var fileToken = uploadFileToLark(att.data_base64, att.name, att.type, STR_APP, STR_APP);
+      uploaded.push({ file_token: fileToken, name: att.name });
+      Logger.log('submitADJForm: attachment ' + (a+1) + ' uploaded, fileToken=' + fileToken);
     } catch(uploadErr) {
-      attachmentWarning = uploadErr.message.slice(0, 120);
-      Logger.log('ADJ attachment upload failed (non-fatal): ' + uploadErr.message);
+      warnings.push((att.name || ('file ' + (a+1))) + ': ' + uploadErr.message.slice(0, 80));
+      Logger.log('ADJ attachment ' + (a+1) + ' upload failed (non-fatal): ' + uploadErr.message);
     }
   }
+  if (uploaded.length) attachmentField   = uploaded;
+  if (warnings.length) attachmentWarning = warnings.join('; ');
 
   var headerResp = larkApiPost(BASE + STR_APP + '/tables/' + ADJ_HEADER + '/records', token, {
     fields: {
@@ -696,6 +704,18 @@ function doGet(e) {
       if (result.code !== 0) throw new Error('Lark update error ' + result.code + ': ' + result.msg);
       return jsonpOut(e, { status: 'ok', data: result.data || {} });
     }
+    if (action === 'attachmentUrl') {
+      // Ambil temporary download URL untuk attachment Bitable (dipanggil dari mini-app via JSONP)
+      var fileToken = String(e.parameter.fileToken || '').trim();
+      if (!fileToken) throw new Error('fileToken parameter required');
+      var atToken = getLarkToken();
+      var atUrl   = 'https://open.larksuite.com/open-apis/drive/v1/medias/batch_get_tmp_download_url' +
+                    '?file_tokens=' + encodeURIComponent(fileToken);
+      if (e.parameter.extra) atUrl += '&extra=' + encodeURIComponent(e.parameter.extra);
+      var atResp = larkApiGet(atUrl, atToken);
+      if (atResp.code !== 0) throw new Error('attachmentUrl error ' + atResp.code + ': ' + atResp.msg);
+      return jsonpOut(e, { status: 'ok', data: atResp.data || {} });
+    }
     if (action === 'larkCreate') {
       var appToken  = e.parameter.appToken;
       var tableId   = e.parameter.tableId;
@@ -789,9 +809,11 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ADJ Form submission: { adjHeader: {...}, adjItems: [...], attachment: {...} }
+    // ADJ Form submission: { adjHeader: {...}, adjItems: [...], attachments: [...] }
+    // (legacy single `attachment` tetap didukung)
     if (body.adjHeader && body.adjItems) {
-      var adjResult = submitADJForm(body.adjHeader, body.adjItems, body.attachment || null);
+      var adjAtts   = body.attachments || (body.attachment ? [body.attachment] : []);
+      var adjResult = submitADJForm(body.adjHeader, body.adjItems, adjAtts);
       return ContentService.createTextOutput(JSON.stringify(adjResult))
         .setMimeType(ContentService.MimeType.JSON);
     }
