@@ -655,10 +655,19 @@ function doGet(e) {
       var filter    = e.parameter.filter ? JSON.parse(e.parameter.filter) : null;
       var pageSize  = parseInt(e.parameter.pageSize || '500');
       var token     = getLarkToken();
-      // Fetch tanpa filter API (hindari format issue) — filter di GAS
-      var resp      = larkApiPost(BASE + appToken + '/tables/' + tableId + '/records/search', token, { page_size: pageSize, automatic_fields: true });
-      if (resp.code !== 0) throw new Error('Lark search error ' + resp.code + ': ' + resp.msg);
-      var items     = (resp.data && resp.data.items) || [];
+      // Fetch tanpa filter API (hindari format issue) — filter di GAS.
+      // Loop semua halaman (tabel bisa >500 baris, record baru bisa jatuh di halaman berikutnya).
+      var items       = [];
+      var pageToken   = null;
+      var searchUrl   = BASE + appToken + '/tables/' + tableId + '/records/search';
+      do {
+        var searchBody = { page_size: pageSize, automatic_fields: true };
+        if (pageToken) searchBody.page_token = pageToken;
+        var resp = larkApiPost(searchUrl, token, searchBody);
+        if (resp.code !== 0) throw new Error('Lark search error ' + resp.code + ': ' + resp.msg);
+        items     = items.concat((resp.data && resp.data.items) || []);
+        pageToken = (resp.data && resp.data.has_more) ? resp.data.page_token : null;
+      } while (pageToken);
       // Terapkan filter di GAS
       if (filter && filter.conditions && filter.conditions.length > 0) {
         items = items.filter(function(item) {
